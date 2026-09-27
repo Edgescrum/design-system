@@ -1,0 +1,50 @@
+{
+  "$description": "セマンティック層。CSS 変数名（--background 等）は peco の既存 globals.css と完全一致させる — 差し替え PR の検証条件が「画素差分ゼロ」であるため、名前も値も変えないこと。",
+  "background": {
+    "$type": "color",
+    "$value": "{color.neutral.50}",
+    "$description": "ページの地色"
+  },
+  "foreground": {
+    "$type": "color",
+    "$value": "{color.neutral.900}",
+    "$description": "本文テキスト"
+  },
+  "accent": {
+    "$type": "color",
+    "$value": "{color.salmon.500}",
+    "$description": "主ボタン・リンク・フォーカスリング"
+  },
+  "accent-light": {
+    "$type": "color",
+    "$value": "{color.salmon.300}"
+  },
+  "accent-dark": {
+    "$type": "color",
+    "$value": "{color.salmon.600}",
+    "$description": "hover / active の濃色"
+  },
+  "accent-bg": {
+    "$type": "color",
+    "$value": "{color.salmon.50}",
+    "$description": "アクセントの淡色背景（選択状態・フォーカスシャドウ）"
+  },
+  "success": {
+    "$type": "color",
+    "$value": "{color.green.line}"
+  },
+  "card": {
+    "$type": "color",
+    "$value": "{color.white}",
+    "$description": "カード・モーダル等の面"
+  },
+  "border": {
+    "$type": "color",
+    "$value": "{color.neutral.200}"
+  },
+  "muted": {
+    "$type": "color",
+    "$value": "{color.neutral.500}",
+    "$description": "補助テキスト・プレースホルダ"
+  }
+}

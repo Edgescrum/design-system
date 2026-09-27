@@ -1,0 +1,27 @@
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm build
+      - run: pnpm typecheck
+      # 生成物の妥当性: セマンティック CSS が peco の既存 :root と同じ変数を全部含むこと
+      - name: verify token css output
+        run: |
+          for v in background foreground accent accent-light accent-dark accent-bg success card border muted; do
+            grep -q -- "--$v:" packages/tokens/dist/css/tokens.css || { echo "missing --$v in tokens.css"; exit 1; }
+          done
+          echo "all 10 semantic variables present"

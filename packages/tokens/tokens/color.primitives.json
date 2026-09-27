@@ -1,0 +1,38 @@
+{
+  "color": {
+    "$description": "プリミティブ層。peco の src/app/globals.css にあった実値を 1 バイトも変えずに階層化したもの（2026-09-27 監査）。ここに新しい値を足すときは必ずセマンティック層から参照すること — アプリコードがプリミティブを直接使うのは禁止。",
+    "salmon": {
+      "$description": "ブランドカラー（ロゴのサーモンピンク系）",
+      "50": { "$type": "color", "$value": "#fef2f0" },
+      "300": { "$type": "color", "$value": "#f5a899" },
+      "500": {
+        "$type": "color",
+        "$value": "#f08c79",
+        "$description": "ロゴのサーモンピンク。ブランドの主色"
+      },
+      "600": { "$type": "color", "$value": "#d97365" }
+    },
+    "mauve": {
+      "500": {
+        "$type": "color",
+        "$value": "#be7c7b",
+        "$description": "ロゴのモーヴ。ブランド副色。2026-09-27 時点でセマンティック層からの参照なし（globals.css のコメントにのみ存在していた）"
+      }
+    },
+    "neutral": {
+      "$description": "ウォームグレー階段（茶系ニュートラル）",
+      "50": { "$type": "color", "$value": "#faf8f6" },
+      "200": { "$type": "color", "$value": "#ece4e0" },
+      "500": { "$type": "color", "$value": "#8c7a7a" },
+      "900": { "$type": "color", "$value": "#3d2c2c" }
+    },
+    "white": { "$type": "color", "$value": "#ffffff" },
+    "green": {
+      "line": {
+        "$type": "color",
+        "$value": "#06C755",
+        "$description": "LINE ブランドグリーン（LINE 社の公式カラー）。予約確定・成功状態に使用"
+      }
+    }
+  }
+}

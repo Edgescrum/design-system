@@ -1,0 +1,44 @@
+name: Release
+
+on:
+  push:
+    branches: [main]
+
+concurrency: release-${{ github.ref }}
+
+jobs:
+  release:
+    if: github.repository == 'Edgescrum/peco-design-system'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      pull-requests: write
+      id-token: write
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: pnpm
+          registry-url: https://registry.npmjs.org
+      - run: pnpm install --frozen-lockfile
+      # NPM_TOKEN 未設定（npm org 作成前）の間は publish をスキップして
+      # changeset の Version PR 運用だけ回す
+      - name: check npm token
+        id: npm
+        run: |
+          if [ -n "${{ secrets.NPM_TOKEN }}" ]; then
+            echo "present=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "present=false" >> "$GITHUB_OUTPUT"
+            echo "::notice::NPM_TOKEN 未設定のため publish はスキップ（Version PR の作成のみ）"
+          fi
+      - name: create release PR or publish
+        uses: changesets/action@v1
+        with:
+          version: pnpm version
+          publish: ${{ steps.npm.outputs.present == 'true' && 'pnpm release' || '' }}
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          NPM_TOKEN: ${{ secrets.NPM_TOKEN }}

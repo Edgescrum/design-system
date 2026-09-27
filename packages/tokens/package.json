@@ -1,0 +1,32 @@
+{
+  "name": "@edgescrum/peco-tokens",
+  "version": "0.0.0",
+  "description": "PeCo design tokens — DTCG JSON as the source of truth, built to CSS variables and a Tailwind v4 theme",
+  "license": "MIT",
+  "type": "module",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/Edgescrum/peco-design-system.git",
+    "directory": "packages/tokens"
+  },
+  "publishConfig": {
+    "access": "public"
+  },
+  "files": [
+    "dist",
+    "tokens"
+  ],
+  "exports": {
+    "./css": "./dist/css/tokens.css",
+    "./primitives.css": "./dist/css/primitives.css",
+    "./theme.css": "./dist/css/theme.css",
+    "./tokens.json": "./dist/json/tokens.json"
+  },
+  "scripts": {
+    "build": "node build.mjs",
+    "sync:figma": "node scripts/sync-figma.mjs"
+  },
+  "devDependencies": {
+    "style-dictionary": "^5.1.0"
+  }
+}

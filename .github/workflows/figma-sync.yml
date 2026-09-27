@@ -1,0 +1,27 @@
+name: Figma Variables Sync
+
+# トークン JSON が main に入ったら Figma Variables を自動更新する（コードが正 → Figma は写し）。
+# FIGMA_TOKEN（secret）と FIGMA_FILE_KEY（variable）の設定が必要。
+# ライブラリファイル未作成の間は未設定のままでよい（スクリプトが CI では exit 0 でスキップする）。
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "packages/tokens/tokens/**"
+  workflow_dispatch:
+
+jobs:
+  sync:
+    if: github.repository == 'Edgescrum/peco-design-system'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+      - name: sync tokens to Figma Variables
+        run: node packages/tokens/scripts/sync-figma.mjs
+        env:
+          FIGMA_TOKEN: ${{ secrets.FIGMA_TOKEN }}
+          FIGMA_FILE_KEY: ${{ vars.FIGMA_FILE_KEY }}

@@ -1,0 +1,21 @@
+{
+  "font": {
+    "$description": "フォントスタック。var(--font-dm-sans) / var(--font-geist-mono) は消費側（Next.js の next/font）が定義する CSS 変数への参照。",
+    "sans": {
+      "$type": "fontFamily",
+      "$value": [
+        "var(--font-dm-sans)",
+        "system-ui",
+        "-apple-system",
+        "Hiragino Sans",
+        "Yu Gothic",
+        "Meiryo",
+        "sans-serif"
+      ]
+    },
+    "mono": {
+      "$type": "fontFamily",
+      "$value": ["var(--font-geist-mono)"]
+    }
+  }
+}
