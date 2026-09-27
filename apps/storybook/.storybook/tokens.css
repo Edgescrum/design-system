@@ -1,0 +1,17 @@
+/*
+ * Storybook 用のスタイルエントリ。peco 本体の globals.css の消費構成と同じ並び:
+ * Tailwind v4 + トークンの :root 変数 + @theme inline。
+ * @source は UI パッケージのソースを走査対象にする（クラス文字列は src に書かれている）。
+ */
+@import "tailwindcss" source(none);
+@import "@edgescrum/peco-tokens/css";
+@import "@edgescrum/peco-tokens/primitives.css";
+@import "@edgescrum/peco-tokens/theme.css";
+
+@source "../../../packages/ui/src";
+@source "../stories";
+
+body {
+  color: var(--foreground);
+  font-family: var(--font-sans);
+}

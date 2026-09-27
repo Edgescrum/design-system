@@ -5,3 +5,7 @@
  * 現状監査（Button の variant 集計）の完了後に実装を足していく。
  */
 export { cx } from "./cx";
+export { Button, buttonClass } from "./Button";
+export type { ButtonProps, ButtonVariant, ButtonSize } from "./Button";
+export { Badge } from "./Badge";
+export type { BadgeProps, BadgeTone, BadgeVariant, BadgeSize } from "./Badge";
