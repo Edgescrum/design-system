@@ -1,6 +1,6 @@
 {
   "color": {
-    "$description": "プリミティブ層。peco の src/app/globals.css にあった実値を 1 バイトも変えずに階層化したもの（2026-09-27 監査）。ここに新しい値を足すときは必ずセマンティック層から参照すること — アプリコードがプリミティブを直接使うのは禁止。",
+    "$description": "プリミティブ層。ブランド系（salmon/mauve/neutral）は peco の globals.css の実値、ステータス系（red/amber/green/blue/gray）は 2026-09-27 監査で頻出した Tailwind v4 パレットの実値（oklch）を、使われている段だけ収載したもの。ここに新しい値を足すときは必ずセマンティック層から参照すること — アプリコードがプリミティブを直接使うのは禁止。",
     "salmon": {
       "$description": "ブランドカラー（ロゴのサーモンピンク系）",
       "50": { "$type": "color", "$value": "#fef2f0" },
@@ -16,11 +16,11 @@
       "500": {
         "$type": "color",
         "$value": "#be7c7b",
-        "$description": "ロゴのモーヴ。ブランド副色。2026-09-27 時点でセマンティック層からの参照なし（globals.css のコメントにのみ存在していた）"
+        "$description": "ロゴのモーヴ。ブランド副色。2026-09-27 監査時点で peco 内に hex 直書きが 10 箇所あった（LP のグラデーション等）— トークン化してそちらを置換する"
       }
     },
     "neutral": {
-      "$description": "ウォームグレー階段（茶系ニュートラル）",
+      "$description": "ウォームグレー階段（茶系ニュートラル）。無彩色の gray とは別物",
       "50": { "$type": "color", "$value": "#faf8f6" },
       "200": { "$type": "color", "$value": "#ece4e0" },
       "500": { "$type": "color", "$value": "#8c7a7a" },
@@ -31,8 +31,51 @@
       "line": {
         "$type": "color",
         "$value": "#06C755",
-        "$description": "LINE ブランドグリーン（LINE 社の公式カラー）。予約確定・成功状態に使用"
-      }
+        "$description": "LINE ブランドグリーン（LINE 社の公式カラー）。LINE 関連 CTA 専用 — UI 一般の成功状態には green.600 系（semantic: positive）を使う"
+      },
+      "50": { "$type": "color", "$value": "oklch(98.2% 0.018 155.826)" },
+      "200": { "$type": "color", "$value": "oklch(92.5% 0.084 155.995)" },
+      "600": {
+        "$type": "color",
+        "$value": "oklch(62.7% 0.194 149.214)",
+        "$description": "UI の成功状態。監査で green-* と emerald-* が同義に二重化していた（計 214 回）— green に統一する"
+      },
+      "700": { "$type": "color", "$value": "oklch(52.7% 0.154 150.069)" }
+    },
+    "red": {
+      "$description": "危険・破壊的操作。DangerZone.tsx の裁定どおり文字色は 600 に寄せる（500 は必須マーク等の残存）",
+      "50": { "$type": "color", "$value": "oklch(97.1% 0.013 17.38)" },
+      "100": { "$type": "color", "$value": "oklch(93.6% 0.032 17.717)" },
+      "200": { "$type": "color", "$value": "oklch(88.5% 0.062 18.334)" },
+      "500": { "$type": "color", "$value": "oklch(63.7% 0.237 25.331)" },
+      "600": { "$type": "color", "$value": "oklch(57.7% 0.245 27.325)" },
+      "700": { "$type": "color", "$value": "oklch(50.5% 0.213 27.518)" }
+    },
+    "amber": {
+      "$description": "警告・注意喚起",
+      "50": { "$type": "color", "$value": "oklch(98.7% 0.022 95.277)" },
+      "100": { "$type": "color", "$value": "oklch(96.2% 0.059 95.617)" },
+      "200": { "$type": "color", "$value": "oklch(92.4% 0.12 95.746)" },
+      "600": { "$type": "color", "$value": "oklch(66.6% 0.179 58.318)" },
+      "700": { "$type": "color", "$value": "oklch(55.5% 0.163 48.998)" },
+      "800": { "$type": "color", "$value": "oklch(47.3% 0.137 46.201)" },
+      "900": { "$type": "color", "$value": "oklch(41.4% 0.112 45.904)" }
+    },
+    "blue": {
+      "$description": "情報・案内",
+      "50": { "$type": "color", "$value": "oklch(97% 0.014 254.604)" },
+      "100": { "$type": "color", "$value": "oklch(93.2% 0.032 255.585)" },
+      "700": { "$type": "color", "$value": "oklch(48.8% 0.243 264.376)" },
+      "900": { "$type": "color", "$value": "oklch(37.9% 0.146 265.522)" }
+    },
+    "gray": {
+      "$description": "無彩色グレー。監査で 137 回使用（無効状態・中立面）。ウォームな neutral との使い分けは要検討 — 新規コードでは neutral を優先すること",
+      "50": { "$type": "color", "$value": "oklch(98.5% 0.002 247.839)" },
+      "100": { "$type": "color", "$value": "oklch(96.7% 0.003 264.542)" },
+      "200": { "$type": "color", "$value": "oklch(92.8% 0.006 264.531)" },
+      "400": { "$type": "color", "$value": "oklch(70.7% 0.022 261.325)" },
+      "500": { "$type": "color", "$value": "oklch(55.1% 0.027 264.364)" },
+      "700": { "$type": "color", "$value": "oklch(37.3% 0.034 259.733)" }
     }
   }
 }
