@@ -7,14 +7,21 @@
  *   dist/css/primitives.css  — プリミティブ層の :root 変数（参照・ドキュメント用。
  *                              アプリコードからの直接使用は禁止）
  *   dist/css/theme.css       — Tailwind v4 の @theme inline ブロック
- *                              （--color-<semantic名> と --font-<名>）
- *   dist/json/tokens.json    — 解決済みフラット JSON（Figma 同期スクリプト等の機械用）
+ *                              （--color-* / --font-* / --text-* / --radius-*）
+ *   dist/json/tokens.json    — 解決済みフラット JSON（機械用）
+ *
+ * ★ 色値は hex と oklch() 文字列の両方がある（ステータス系は Tailwind v4 パレットの
+ *   oklch をそのまま収載している — hex に変換すると v4 の描画と微差が出るため）。
+ *   したがって色をパースする transform（color/css 等）は使わず、名前変換だけを行う。
  */
 import StyleDictionary from "style-dictionary";
 
-/** セマンティック層 = パスが color.（プリミティブ）でも font.（タイポ）でもないトークン */
-const isSemantic = (token) => token.path[0] !== "color" && token.path[0] !== "font";
-const isPrimitiveColor = (token) => token.path[0] === "color";
+/** 名前空間の判定。tokens/*.json のトップレベルキーが正 */
+const ns = (token) => token.path[0];
+const isPrimitiveColor = (token) => ns(token) === "color";
+const isSemanticColor = (token) => !["color", "font", "text", "radius"].includes(ns(token));
+
+const PASSTHROUGH_TRANSFORMS = ["attribute/cti", "name/kebab"];
 
 const sd = new StyleDictionary({
   source: ["tokens/**/*.json"],
@@ -22,18 +29,23 @@ const sd = new StyleDictionary({
     formats: {
       /**
        * Tailwind v4 の @theme inline ブロック。peco の globals.css の既存
-       * @theme inline と同じ対応（--color-X: var(--X)）を機械生成する。
+       * @theme inline と同じ対応（--color-X: var(--X)）を機械生成し、
+       * フォント・追加 text 段・radius の役割トークンも同じブロックに載せる。
        */
       "peco/tailwind-theme": ({ dictionary }) => {
         const lines = [];
         for (const token of dictionary.allTokens) {
-          if (isSemantic(token)) {
+          if (isSemanticColor(token)) {
             lines.push(`  --color-${token.name}: var(--${token.name});`);
-          } else if (token.path[0] === "font") {
+          } else if (ns(token) === "font") {
             const families = token.original.$value
               .map((f) => (f.includes(" ") ? `"${f}"` : f))
               .join(", ");
             lines.push(`  --font-${token.path[1]}: ${families};`);
+          } else if (ns(token) === "text") {
+            lines.push(`  --text-${token.path[1]}: ${token.$value};`);
+          } else if (ns(token) === "radius") {
+            lines.push(`  --radius-${token.path[1]}: ${token.$value};`);
           }
         }
         return `@theme inline {\n${lines.join("\n")}\n}\n`;
@@ -42,19 +54,19 @@ const sd = new StyleDictionary({
   },
   platforms: {
     "css-semantic": {
-      transformGroup: "css",
+      transforms: PASSTHROUGH_TRANSFORMS,
       buildPath: "dist/css/",
       files: [
         {
           destination: "tokens.css",
           format: "css/variables",
-          filter: isSemantic,
+          filter: isSemanticColor,
           options: { outputReferences: false },
         },
       ],
     },
     "css-primitives": {
-      transformGroup: "css",
+      transforms: PASSTHROUGH_TRANSFORMS,
       buildPath: "dist/css/",
       files: [
         {
@@ -66,12 +78,12 @@ const sd = new StyleDictionary({
       ],
     },
     "css-theme": {
-      transformGroup: "css",
+      transforms: PASSTHROUGH_TRANSFORMS,
       buildPath: "dist/css/",
       files: [{ destination: "theme.css", format: "peco/tailwind-theme" }],
     },
     json: {
-      transformGroup: "js",
+      transforms: PASSTHROUGH_TRANSFORMS,
       buildPath: "dist/json/",
       files: [{ destination: "tokens.json", format: "json/flat" }],
     },

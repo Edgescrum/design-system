@@ -46,5 +46,50 @@
     "$type": "color",
     "$value": "{color.neutral.500}",
     "$description": "補助テキスト・プレースホルダ"
+  },
+  "on-accent": {
+    "$type": "color",
+    "$value": "{color.white}",
+    "$description": "accent / success 等の濃色塗りの上の文字色。監査時点では text-white 直書きが 254 回"
+  },
+  "danger": {
+    "$type": "color",
+    "$value": "{color.red.600}",
+    "$description": "危険・破壊的操作の文字/塗り。DangerZone.tsx の「red-600 に寄せる」裁定を踏襲"
+  },
+  "danger-bg": {
+    "$type": "color",
+    "$value": "{color.red.50}",
+    "$description": "危険の淡色面"
+  },
+  "warning": {
+    "$type": "color",
+    "$value": "{color.amber.700}",
+    "$description": "警告の文字色"
+  },
+  "warning-bg": {
+    "$type": "color",
+    "$value": "{color.amber.50}",
+    "$description": "警告の淡色面"
+  },
+  "positive": {
+    "$type": "color",
+    "$value": "{color.green.600}",
+    "$description": "UI の成功状態（保存完了・有効等）。LINE 関連 CTA の success（LINE 緑）とは別トークン。green/emerald の二重化はこちらに統一"
+  },
+  "positive-bg": {
+    "$type": "color",
+    "$value": "{color.green.50}",
+    "$description": "成功の淡色面"
+  },
+  "info": {
+    "$type": "color",
+    "$value": "{color.blue.700}",
+    "$description": "情報・案内の文字色"
+  },
+  "info-bg": {
+    "$type": "color",
+    "$value": "{color.blue.50}",
+    "$description": "情報の淡色面"
   }
 }

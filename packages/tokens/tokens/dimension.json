@@ -1,0 +1,20 @@
+{
+  "text": {
+    "$description": "フォントサイズの追加段。Tailwind 標準（text-xs = 12px）より小さい段への需要が実測で大きい（text-[11px] 256 回 / text-[10px] 166 回・2026-09-27 監査）。font-size のみ定義し line-height の連動トークンは持たない — 既存の text-[11px]（font-size のみ変更）からの置換で行間が変わらないようにするため。",
+    "2xs": { "$type": "dimension", "$value": "0.6875rem" },
+    "3xs": { "$type": "dimension", "$value": "0.625rem" }
+  },
+  "radius": {
+    "$description": "角丸の役割トークン。実測の最頻値から抽出（rounded-xl 587 回が最頻・カード面は rounded-2xl 304 回）。",
+    "control": {
+      "$type": "dimension",
+      "$value": "0.75rem",
+      "$description": "ボタン・入力欄などの操作要素（= rounded-xl）"
+    },
+    "surface": {
+      "$type": "dimension",
+      "$value": "1rem",
+      "$description": "カード・モーダルなどの面（= rounded-2xl）"
+    }
+  }
+}

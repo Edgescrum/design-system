@@ -29,12 +29,40 @@ if (!FIGMA_TOKEN || !FIGMA_FILE_KEY) {
   process.exit(process.env.CI ? 0 : 1);
 }
 
-/** #rrggbb → Figma の RGBA (0..1) */
-function hexToRgba(hex) {
-  const m = /^#([0-9a-f]{6})$/i.exec(hex.trim());
-  if (!m) throw new Error(`色値が #rrggbb 形式ではありません: ${hex}`);
-  const n = parseInt(m[1], 16);
-  return { r: ((n >> 16) & 255) / 255, g: ((n >> 8) & 255) / 255, b: (n & 255) / 255, a: 1 };
+/** #rrggbb または oklch(L% C H) → Figma の RGBA (0..1) */
+function cssColorToRgba(value) {
+  const hex = /^#([0-9a-f]{6})$/i.exec(value.trim());
+  if (hex) {
+    const n = parseInt(hex[1], 16);
+    return { r: ((n >> 16) & 255) / 255, g: ((n >> 8) & 255) / 255, b: (n & 255) / 255, a: 1 };
+  }
+  const ok = /^oklch\(\s*([\d.]+)%\s+([\d.]+)\s+([\d.]+)\s*\)$/i.exec(value.trim());
+  if (ok) return oklchToRgba(Number(ok[1]) / 100, Number(ok[2]), Number(ok[3]));
+  throw new Error(`色値が #rrggbb / oklch(L% C H) 形式ではありません: ${value}`);
+}
+
+/**
+ * OKLCH → sRGB。Björn Ottosson の OKLab 定義の標準行列
+ * (https://bottosson.github.io/posts/oklab/) をそのまま実装。
+ * Tailwind v4 パレットの oklch をブラウザが sRGB 画面に描くのと同じ値になる。
+ */
+function oklchToRgba(L, C, H) {
+  const rad = (H * Math.PI) / 180;
+  const a = C * Math.cos(rad);
+  const b = C * Math.sin(rad);
+  const l = (L + 0.3963377774 * a + 0.2158037573 * b) ** 3;
+  const m = (L - 0.1055613458 * a - 0.0638541728 * b) ** 3;
+  const s = (L - 0.0894841775 * a - 1.291485548 * b) ** 3;
+  const lin = [
+    4.0767416621 * l - 3.3077115913 * m + 0.2309699292 * s,
+    -1.2684380046 * l + 2.6097574011 * m - 0.3413193965 * s,
+    -0.0041960863 * l - 0.7034186147 * m + 1.707614701 * s,
+  ];
+  const gamma = (c) => {
+    const v = Math.min(1, Math.max(0, c));
+    return v <= 0.0031308 ? 12.92 * v : 1.055 * v ** (1 / 2.4) - 0.055;
+  };
+  return { r: gamma(lin[0]), g: gamma(lin[1]), b: gamma(lin[2]), a: 1 };
 }
 
 /** DTCG ツリーを {path[], value, description} のリストに展開（$type: color のみ） */
@@ -129,7 +157,7 @@ function planVariables(tokens, collection, primitiveVarIds) {
     payload.variableModeValues.push({
       variableId: varId,
       modeId: collection.modeId,
-      value: aliasTarget ? { type: "VARIABLE_ALIAS", id: aliasTarget } : hexToRgba(t.value),
+      value: aliasTarget ? { type: "VARIABLE_ALIAS", id: aliasTarget } : cssColorToRgba(t.value),
     });
     ids.set(`{color.${t.path.slice(1).join(".")}}`, varId);
   }
