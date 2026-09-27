@@ -37,8 +37,10 @@ jobs:
       - name: create release PR or publish
         uses: changesets/action@v1
         with:
-          version: pnpm version
-          publish: ${{ steps.npm.outputs.present == 'true' && 'pnpm release' || '' }}
+          # `pnpm version` は pnpm の組み込みコマンド（semver バンプ）に食われるため
+          # `pnpm run` で package.json のスクリプトを明示的に呼ぶ
+          version: pnpm run version-packages
+          publish: ${{ steps.npm.outputs.present == 'true' && 'pnpm run release' || '' }}
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
