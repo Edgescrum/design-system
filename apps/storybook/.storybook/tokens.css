@@ -15,3 +15,12 @@ body {
   color: var(--foreground);
   font-family: var(--font-sans);
 }
+
+/*
+ * peco 本体の globals.css が定義するカスタムユーティリティのうち、
+ * UI パッケージのコンポーネントが参照するものだけをここで再現する
+ * （FullScreenLoading が `min-h-app` を使う）。定義は peco 側と同一。
+ */
+@utility min-h-app {
+  min-height: calc(var(--app-viewport, 100svh) - var(--env-banner-h, 0px));
+}
