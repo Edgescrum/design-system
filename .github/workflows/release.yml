@@ -44,3 +44,6 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
+          # setup-node (registry-url 指定) が生成する .npmrc は NODE_AUTH_TOKEN を参照する。
+          # これが無いと publish が無認証になり、scoped パッケージは 404 で落ちる（実測）
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
