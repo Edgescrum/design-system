@@ -94,9 +94,36 @@ async function figma(method, url, body) {
   return json;
 }
 
+/**
+ * DTCG ツリーの $type: dimension を FLOAT トークンに展開する。
+ * Figma の数値 Variable は単位なし px なので、rem は ×16 で換算する
+ * （radius/control 0.75rem → 12 等）。
+ */
+function flattenDimensions(node, path = []) {
+  const out = [];
+  for (const [key, val] of Object.entries(node)) {
+    if (key.startsWith("$")) continue;
+    if (val && typeof val === "object" && "$value" in val) {
+      if (val.$type === "dimension") {
+        const m = /^([\d.]+)(px|rem)$/.exec(val.$value);
+        if (!m) throw new Error(`dimension が px/rem 形式ではありません: ${val.$value}`);
+        out.push({
+          path: [...path, key],
+          number: Number(m[1]) * (m[2] === "rem" ? 16 : 1),
+          description: val.$description ?? "",
+        });
+      }
+    } else if (val && typeof val === "object") {
+      out.push(...flattenDimensions(val, [...path, key]));
+    }
+  }
+  return out;
+}
+
 const primitives = flattenColors(JSON.parse(await readFile(join(TOKEN_DIR, "color.primitives.json"), "utf8")));
 const semanticRaw = JSON.parse(await readFile(join(TOKEN_DIR, "color.semantic.json"), "utf8"));
 const semantics = flattenColors(semanticRaw).map((t) => ({ ...t, path: ["color", ...t.path] }));
+const dimensions = flattenDimensions(JSON.parse(await readFile(join(TOKEN_DIR, "dimension.json"), "utf8")));
 
 /** セマンティックの {color.x.y} 参照をプリミティブの実値に解決する */
 const primitiveByRef = new Map(primitives.map((t) => [`{color.${t.path.slice(1).join(".")}}`, t.value]));
@@ -141,6 +168,7 @@ function planVariables(tokens, collection, primitiveVarIds) {
     const name = t.path.join("/");
     const found = variablesByKey.get(`${collection.id}:${name}`);
     let varId = found?.id;
+    const isFloat = typeof t.number === "number";
     if (!found) {
       varId = `temp_var_${tempId++}`;
       payload.variables.push({
@@ -148,16 +176,20 @@ function planVariables(tokens, collection, primitiveVarIds) {
         id: varId,
         name,
         variableCollectionId: collection.id,
-        resolvedType: "COLOR",
+        resolvedType: isFloat ? "FLOAT" : "COLOR",
         description: t.description,
       });
     }
-    // セマンティックはプリミティブ変数への alias、プリミティブは実値
+    // セマンティックはプリミティブ変数への alias、プリミティブ・数値は実値
     const aliasTarget = t.aliasOf && primitiveVarIds?.get(t.aliasOf);
     payload.variableModeValues.push({
       variableId: varId,
       modeId: collection.modeId,
-      value: aliasTarget ? { type: "VARIABLE_ALIAS", id: aliasTarget } : cssColorToRgba(t.value),
+      value: aliasTarget
+        ? { type: "VARIABLE_ALIAS", id: aliasTarget }
+        : isFloat
+          ? t.number
+          : cssColorToRgba(t.value),
     });
     ids.set(`{color.${t.path.slice(1).join(".")}}`, varId);
   }
@@ -168,6 +200,8 @@ const primCol = planCollection("Primitives", true);
 const semCol = planCollection("Semantic", false);
 const primitiveVarIds = planVariables(primitives, primCol);
 planVariables(semantics, semCol, primitiveVarIds);
+// 役割トークン（radius/* text/*）は Semantic コレクションの FLOAT 変数
+planVariables(dimensions, semCol);
 
 // 既存コレクションのモード名を Light に揃える（新規作成時のみ）
 for (const col of payload.variableCollections) {
