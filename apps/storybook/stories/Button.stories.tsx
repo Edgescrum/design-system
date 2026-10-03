@@ -8,6 +8,8 @@ const VARIANTS: ButtonVariant[] = [
   "outline",
   "ghost",
   "danger",
+  "danger-outline",
+  "danger-text",
   "success",
   "inverse",
 ];
