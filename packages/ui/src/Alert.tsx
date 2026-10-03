@@ -57,7 +57,8 @@ export function Alert({
     error: "bg-red-50 text-red-600",
     success: "bg-green-50 text-green-600",
     // UAT round 9: 強制削除モード等の警告表示用 (削除確認モーダル).
-    warning: "bg-orange-50 text-orange-700",
+    // 2026-10-04 裁定: orange はパレット外だったため warning トークン（amber）に統一。
+    warning: "bg-warning-bg text-warning",
   }[type];
 
   return (
