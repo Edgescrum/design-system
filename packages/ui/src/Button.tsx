@@ -5,6 +5,10 @@ import { cx } from "./cx";
  * variant は 2026-09-27 監査（docs/audit-2026-09-27.md §1）の実測 9 分類から
  * warning（10 件・Badge の warning tone で足りる）を除いた 8 種。
  * 名前と構成は peco のインライン実装の最頻値に合わせてある — 発明ではなく正規化。
+ *
+ * `danger-outline` / `danger-text` は #11 の裁定（2026-10-04）で追加した 9・10 種目。
+ * peco の DangerZone 4 役割（トリガー=danger-outline / 確定=danger /
+ * 取消=secondary / テキスト=danger-text）を完全移行するためのもの。
  */
 export type ButtonVariant =
   | "primary"
@@ -13,6 +17,8 @@ export type ButtonVariant =
   | "outline"
   | "ghost"
   | "danger"
+  | "danger-outline"
+  | "danger-text"
   | "success"
   | "inverse";
 
@@ -49,6 +55,13 @@ const VARIANT: Record<ButtonVariant, string> = {
   outline: "border border-border bg-transparent text-foreground hover:bg-background",
   ghost: "text-foreground hover:bg-background",
   danger: "bg-danger text-on-accent hover:opacity-90",
+  /**
+   * DangerZone のトリガー（DANGER_TRIGGER_CLASS の写し）。元実装に hover は無い
+   * （モバイルファースト・タッチ主体）ので足さないこと — 発明ではなく正規化。
+   */
+  "danger-outline": "border border-danger-border bg-card text-danger",
+  /** DangerZone の赤テキスト（DANGER_TEXT_CLASS の写し）。同じく hover なし */
+  "danger-text": "text-danger",
   /** LINE 関連 CTA 専用（友だち追加・LINE で開く等）。UI 一般の成功には使わない */
   success: "bg-success text-on-accent hover:opacity-90",
   inverse: "bg-foreground text-on-accent hover:opacity-90",

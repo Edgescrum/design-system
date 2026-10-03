@@ -62,6 +62,11 @@
     "$value": "{color.red.50}",
     "$description": "危険の淡色面"
   },
+  "danger-border": {
+    "$type": "color",
+    "$value": "{color.red.200}",
+    "$description": "危険操作の枠線（DangerZone トリガーの border-red-200。DS#11 裁定で Button danger-outline に昇格）"
+  },
   "warning": {
     "$type": "color",
     "$value": "{color.amber.700}",
