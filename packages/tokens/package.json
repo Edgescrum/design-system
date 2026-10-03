@@ -1,6 +1,6 @@
 {
   "name": "@edgescrum/peco-tokens",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "PeCo design tokens — DTCG JSON as the source of truth, built to CSS variables and a Tailwind v4 theme",
   "license": "MIT",
   "type": "module",
