@@ -34,6 +34,7 @@
         "$description": "LINE ブランドグリーン（LINE 社の公式カラー）。LINE 関連 CTA 専用 — UI 一般の成功状態には green.600 系（semantic: positive）を使う"
       },
       "50": { "$type": "color", "$value": "oklch(98.2% 0.018 155.826)" },
+      "100": { "$type": "color", "$value": "oklch(96.2% 0.044 156.743)", "$description": "evaluation スケール 4 段目の枠線。2026-10-06 の emerald → green 統一で必要になった段" },
       "200": { "$type": "color", "$value": "oklch(92.5% 0.084 155.995)" },
       "600": {
         "$type": "color",
@@ -68,6 +69,18 @@
       "700": { "$type": "color", "$value": "oklch(48.8% 0.243 264.376)" },
       "900": { "$type": "color", "$value": "oklch(37.9% 0.146 265.522)" }
     },
+    "orange": {
+      "$description": "★ セマンティックの警告には使わないこと（警告は amber）。evaluation スケールの 2 段目（「悪い」寄り）専用に収載している — 5 段評価を red / amber / green の 3 色に潰すと段の見分けがつかなくなるため、橙と黄を段として正式に認めた（2026-10-06 裁定・DS#24 の b2）。これ以外の用途で足さないこと",
+      "50": { "$type": "color", "$value": "oklch(98% 0.016 73.684)" },
+      "100": { "$type": "color", "$value": "oklch(95.4% 0.038 75.164)" },
+      "600": { "$type": "color", "$value": "oklch(64.6% 0.222 41.116)" }
+    },
+    "yellow": {
+      "$description": "★ amber とは別物。evaluation スケールの 3 段目（中立）専用。orange と同じ経緯で収載（2026-10-06 裁定・DS#24 の b2）",
+      "50": { "$type": "color", "$value": "oklch(98.7% 0.026 102.212)" },
+      "100": { "$type": "color", "$value": "oklch(97.3% 0.071 103.193)" },
+      "700": { "$type": "color", "$value": "oklch(55.4% 0.135 66.442)" }
+    },
     "gray": {
       "$description": "無彩色グレー。監査で 137 回使用（無効状態・中立面）。ウォームな neutral との使い分けは要検討 — 新規コードでは neutral を優先すること",
       "50": { "$type": "color", "$value": "oklch(98.5% 0.002 247.839)" },
@@ -76,6 +89,7 @@
       "300": { "$type": "color", "$value": "oklch(87.2% 0.01 258.338)", "$description": "Toggle の OFF 状態（bg-gray-300）。2026-10-05 の Figma 化で未収載が判明" },
       "400": { "$type": "color", "$value": "oklch(70.7% 0.022 261.325)" },
       "500": { "$type": "color", "$value": "oklch(55.1% 0.027 264.364)" },
+      "600": { "$type": "color", "$value": "oklch(44.6% 0.03 256.802)", "$description": "evaluation スケールの範囲外（1〜5 以外の値が来たとき）の文字色" },
       "700": { "$type": "color", "$value": "oklch(37.3% 0.034 259.733)" }
     }
   }

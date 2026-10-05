@@ -96,5 +96,38 @@
     "$type": "color",
     "$value": "{color.blue.50}",
     "$description": "情報の淡色面"
+  },
+  "rating": {
+    "$description": "5 段評価（アンケートのドライバー評価）の配色。★ positive / warning / danger とは別物で、互いに置き換えない — あちらは「良い・注意・危険」の 3 状態、こちらは 1〜5 の連続スケール。3 色に潰すと隣り合う段の見分けがつかなくなるため、橙（2 段目）と黄（3 段目）をスケール専用に認めている（2026-10-06 裁定・DS#24 の b2）。値は red → orange → yellow → green → green(濃) で、4・5 は 2026-10-06 の emerald → green 統一後の色。unknown は 1〜5 以外が来たときの退避先。",
+    "1": {
+      "bg": { "$type": "color", "$value": "{color.red.50}" },
+      "fg": { "$type": "color", "$value": "{color.red.600}" },
+      "border": { "$type": "color", "$value": "{color.red.100}" }
+    },
+    "2": {
+      "bg": { "$type": "color", "$value": "{color.orange.50}" },
+      "fg": { "$type": "color", "$value": "{color.orange.600}" },
+      "border": { "$type": "color", "$value": "{color.orange.100}" }
+    },
+    "3": {
+      "bg": { "$type": "color", "$value": "{color.yellow.50}" },
+      "fg": { "$type": "color", "$value": "{color.yellow.700}" },
+      "border": { "$type": "color", "$value": "{color.yellow.100}" }
+    },
+    "4": {
+      "bg": { "$type": "color", "$value": "{color.green.50}" },
+      "fg": { "$type": "color", "$value": "{color.green.600}" },
+      "border": { "$type": "color", "$value": "{color.green.100}" }
+    },
+    "5": {
+      "bg": { "$type": "color", "$value": "{color.green.50}" },
+      "fg": { "$type": "color", "$value": "{color.green.700}" },
+      "border": { "$type": "color", "$value": "{color.green.200}" }
+    },
+    "unknown": {
+      "bg": { "$type": "color", "$value": "{color.gray.50}" },
+      "fg": { "$type": "color", "$value": "{color.gray.600}" },
+      "border": { "$type": "color", "$value": "{color.gray.100}" }
+    }
   }
 }
