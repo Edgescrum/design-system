@@ -1,0 +1,9 @@
+{
+  "codeConnect": {
+    "parser": "react",
+    "include": ["code-connect/**/*.figma.ts"],
+    "importPaths": {
+      "packages/ui/src/*": "@edgescrum/peco-ui"
+    }
+  }
+}
