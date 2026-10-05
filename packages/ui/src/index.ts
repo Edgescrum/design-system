@@ -9,6 +9,8 @@ export { Button, buttonClass } from "./Button";
 export type { ButtonProps, ButtonVariant, ButtonSize } from "./Button";
 export { Badge } from "./Badge";
 export type { BadgeProps, BadgeTone, BadgeVariant, BadgeSize } from "./Badge";
+export { RatingBadge, ratingToneClass } from "./RatingBadge";
+export type { RatingBadgeProps } from "./RatingBadge";
 export { Spinner } from "./Spinner";
 export { Alert } from "./Alert";
 export { PageContainer } from "./PageContainer";
