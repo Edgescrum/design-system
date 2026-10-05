@@ -2,6 +2,7 @@
 
 import { useState, useRef, useEffect, useId } from "react";
 import { useIsDesktop } from "./use-is-desktop";
+import { CheckIcon, ChevronDownIcon } from "./icons";
 
 /**
  * 単一選択のセレクタ。**アプリ内の「1 つ選ぶ」UI はすべてこれに揃える。**
@@ -279,19 +280,15 @@ export function SelectDropdown({
               <span className={isSelected ? "font-medium text-accent" : ""}>
                 {o.label}
               </span>
+              {/* icons.tsx の CheckIcon と path / strokeWidth が完全に同じで、
+                  既定サイズだけ違った（16 と 14）。14 を明示して寄せてある（#21）。 */}
               {isSelected && (
-                <svg
-                  width="14"
-                  height="14"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth="2.5"
+                <CheckIcon
+                  width={14}
+                  height={14}
                   aria-hidden="true"
                   className="ml-auto text-accent"
-                >
-                  <path d="M20 6 9 17l-5-5" />
-                </svg>
+                />
               )}
             </button>
           );
@@ -342,18 +339,12 @@ export function SelectDropdown({
           <span className="flex-1 truncate text-muted">{placeholder}</span>
         )}
 
-        <svg
-          width="14"
-          height="14"
-          viewBox="0 0 24 24"
-          fill="none"
-          stroke="currentColor"
-          strokeWidth="2"
+        {/* 開いている間は上を向く。回転はここ（トリガー）が持つ — 開閉状態を
+            知っているのはトリガーであってアイコンではない（#21）。 */}
+        <ChevronDownIcon
           aria-hidden="true"
           className={`shrink-0 text-muted transition-transform ${open ? "rotate-180" : ""}`}
-        >
-          <path d="m6 9 6 6 6-6" />
-        </svg>
+        />
       </button>
 
       {/* モバイル: 画面中央のモーダル風 */}

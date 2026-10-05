@@ -48,6 +48,22 @@ export function ChevronLeftIcon({ width = 20, height = 20, ...props }: SVGProps<
   );
 }
 
+/**
+ * 下向きシェブロン（#21）。
+ *
+ * `SelectDropdown` が svg を直書きしていた分をここへ移した。既定の 14px /
+ * `strokeWidth="2"` は**その直書きの実値そのまま**なので、置換で 1px も変わらない。
+ * 開いている間の反転は呼び出し側の `rotate-180` が担う（回転をこの中に入れない —
+ * 開閉状態はアイコンではなくトリガーが持っているため）。
+ */
+export function ChevronDownIcon({ width = 14, height = 14, ...props }: SVGProps<SVGSVGElement>) {
+  return (
+    <svg width={width} height={height} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" {...props}>
+      <path d="m6 9 6 6 6-6" />
+    </svg>
+  );
+}
+
 export function SearchIcon({ width = 16, height = 16, ...props }: SVGProps<SVGSVGElement>) {
   return (
     <svg width={width} height={height} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" {...props}>

@@ -43,6 +43,7 @@ export {
   CheckIcon,
   ChevronRightIcon,
   ChevronLeftIcon,
+  ChevronDownIcon,
   SearchIcon,
   CalendarIcon,
   ReceiptIcon,
