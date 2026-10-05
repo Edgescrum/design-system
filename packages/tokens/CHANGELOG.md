@@ -1,5 +1,50 @@
 # @edgescrum/peco-tokens
 
+## 0.3.0
+
+### Minor Changes
+
+- f366db2: `radius/control-sm`（0.5rem = `rounded-lg`）を追加。
+
+  角丸の役割トークンは `control`（rounded-xl）と `surface`（rounded-2xl）の 2 段しか無く、
+  **実測 208 回の `rounded-lg` に対応する段が無かった**。アイコンボタン（`h-8 w-8` /
+  `h-9 w-9`）・チップ・ポップオーバー内の項目・注記ボックスがこの段に当たる。
+
+  Figma で Pagination のページ送りボタンと AppHeader の戻るボタンを作ったときに、
+  束縛できる Variable が無く数値直打ちになったのが発覚のきっかけ。
+
+  `rounded-full`（331 回）は Tailwind 標準でそのまま使えるため役割トークンを作らない。
+  `rounded-md`（41 回）以下は用途が定まっておらず、収載すると「迷ったら md」の受け皿に
+  なるので意図的に外してある。
+
+- ca2bcf0: 5 段評価のスケールをトークン化し、`RatingBadge` を追加（DS#24 の b2・2026-10-06 裁定）。
+
+  ## トークン
+
+  `rating/1` 〜 `rating/5` と `rating/unknown` に `bg` / `fg` / `border` の 3 色（計 18 トークン）。
+  値は `red → orange → yellow → green → green(濃)`。
+
+  **`positive` / `warning` / `danger` とは別物で、互いに置き換えない。** あちらは
+  「良い・注意・危険」の 3 状態、こちらは 1〜5 の連続スケールで、3 色に潰すと
+  隣り合う段（2 と 3、4 と 5）の見分けがつかなくなる。そのため橙（2 段目）と
+  黄（3 段目）を**スケール専用に**プリミティブへ収載した。**この 2 色をスケール以外に流用しないこと。**
+
+  新規プリミティブ: `orange/50·100·600`、`yellow/50·100·700`、`green/100`、`gray/600`。
+
+  ## `RatingBadge`
+
+  peco の `review-management-client.tsx` と `customers/[id]/customer-detail-client.tsx` に
+  **バイト単位で同一**の実装が `DriverBadge` / `SurveyDriverBadge` という別名で入っていたため、
+  寄せ先を部品として用意した。`ratingToneClass(value)` も export している
+  （グラフの帯など、バッジ以外で同じスケールを使うとき用）。
+
+  1〜3 と範囲外は peco の旧実装と同値（画素差分なし）。**4・5 は emerald → green の統一で色が変わる**
+  （同裁定の A）。
+
+### Patch Changes
+
+- 117029c: プリミティブに `color/gray/300` を追加。Toggle の OFF 状態（`bg-gray-300`）が実装で使われているのにトークン未収載だった（2026-10-05 の Figma 化で判明）。
+
 ## 0.2.0
 
 ### Minor Changes

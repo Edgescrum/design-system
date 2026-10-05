@@ -1,5 +1,51 @@
 # @edgescrum/peco-ui
 
+## 0.3.0
+
+### Minor Changes
+
+- 0a23d1b: `ChevronDownIcon` を追加し、アイコンの出どころを `icons.tsx` に一本化（#21）。
+
+  同じ chevron が 3 箇所で別々に定義されていた。
+
+  - `Pagination` が `icons.tsx` と**同名**の `ChevronLeftIcon` / `ChevronRightIcon` を
+    ローカル定義していて、path は 1 文字も同じなのに `strokeWidth` と端の処理だけ違った
+    （2.5 + 丸端 ／ `icons.tsx` は 2 + 既定端）
+  - `SelectDropdown` は下向き chevron とチェックマークを svg 直書きしていた
+    （`icons.tsx` に `ChevronDownIcon` が無かった）
+
+  同じ名前で別物があると、`Pagination` を読んだ人が共通アイコンを掴んだつもりで
+  別の線幅を見ることになる。
+
+  **画素差分は無い。** `icons.tsx` 側の既定値は変えず（変えると `ChevronRightIcon` の
+  他の呼び出し元すべての線が太くなる）、差分は呼び出し側から props で渡している。
+  出力される svg の属性集合が置換前と同一であることを
+  `apps/storybook/scripts/verify-icon-consolidation.mjs` で機械的に確認した（7 件すべて一致）。
+
+- ca2bcf0: 5 段評価のスケールをトークン化し、`RatingBadge` を追加（DS#24 の b2・2026-10-06 裁定）。
+
+  ## トークン
+
+  `rating/1` 〜 `rating/5` と `rating/unknown` に `bg` / `fg` / `border` の 3 色（計 18 トークン）。
+  値は `red → orange → yellow → green → green(濃)`。
+
+  **`positive` / `warning` / `danger` とは別物で、互いに置き換えない。** あちらは
+  「良い・注意・危険」の 3 状態、こちらは 1〜5 の連続スケールで、3 色に潰すと
+  隣り合う段（2 と 3、4 と 5）の見分けがつかなくなる。そのため橙（2 段目）と
+  黄（3 段目）を**スケール専用に**プリミティブへ収載した。**この 2 色をスケール以外に流用しないこと。**
+
+  新規プリミティブ: `orange/50·100·600`、`yellow/50·100·700`、`green/100`、`gray/600`。
+
+  ## `RatingBadge`
+
+  peco の `review-management-client.tsx` と `customers/[id]/customer-detail-client.tsx` に
+  **バイト単位で同一**の実装が `DriverBadge` / `SurveyDriverBadge` という別名で入っていたため、
+  寄せ先を部品として用意した。`ratingToneClass(value)` も export している
+  （グラフの帯など、バッジ以外で同じスケールを使うとき用）。
+
+  1〜3 と範囲外は peco の旧実装と同値（画素差分なし）。**4・5 は emerald → green の統一で色が変わる**
+  （同裁定の A）。
+
 ## 0.2.1
 
 ### Patch Changes
