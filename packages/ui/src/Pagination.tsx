@@ -16,42 +16,29 @@
  */
 
 import { useEffect } from "react";
+import { ChevronLeftIcon, ChevronRightIcon } from "./icons";
 
-function ChevronLeftIcon({ className }: { className?: string }) {
-  return (
-    <svg
-      width="14"
-      height="14"
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="2.5"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      className={className}
-    >
-      <path d="m15 18-6-6 6-6" />
-    </svg>
-  );
-}
-
-function ChevronRightIcon({ className }: { className?: string }) {
-  return (
-    <svg
-      width="14"
-      height="14"
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="2.5"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      className={className}
-    >
-      <path d="m9 18 6-6-6-6" />
-    </svg>
-  );
-}
+/**
+ * ページ送り矢印の見た目（#21）。
+ *
+ * このファイルは `icons.tsx` と **同名のローカル関数**を持っていて、
+ * svg の path は 1 文字も同じなのに `strokeWidth` と端の処理だけ違った
+ * （2.5 + 丸端 ／ icons.tsx は 2 + 既定端）。同じ名前で別物があると、
+ * `Pagination` を読んだ人が共通アイコンを掴んだつもりで別の線幅を見る。
+ *
+ * **寄せ方は「共通アイコンを呼んで差分を props で渡す」**にした。
+ * `icons.tsx` 側の既定を 2.5 / 丸端に変えると、`ChevronRightIcon` の
+ * **他の呼び出し元すべての線が太くなる**ので、そちらは触らない。
+ * ここで渡している 3 つの属性は旧ローカル実装の実値そのままで、
+ * 置換による画素差分は無い。
+ */
+const ARROW_PROPS = {
+  width: 14,
+  height: 14,
+  strokeWidth: 2.5,
+  strokeLinecap: "round",
+  strokeLinejoin: "round",
+} as const;
 
 export interface PaginationRange {
   /** 現在ページ (1-indexed) */
@@ -172,7 +159,7 @@ export function Pagination({
           aria-label="前のページ"
           className="inline-flex h-8 min-w-8 items-center justify-center rounded-lg px-2 text-xs font-semibold text-foreground transition-colors hover:bg-accent-bg hover:text-accent-dark disabled:cursor-not-allowed disabled:opacity-35 disabled:hover:bg-transparent disabled:hover:text-foreground"
         >
-          <ChevronLeftIcon />
+          <ChevronLeftIcon {...ARROW_PROPS} />
         </button>
         <span className="px-3 text-[12.5px] font-semibold tabular-nums">
           {currentPage}
@@ -185,7 +172,7 @@ export function Pagination({
           aria-label="次のページ"
           className="inline-flex h-8 min-w-8 items-center justify-center rounded-lg px-2 text-xs font-semibold text-foreground transition-colors hover:bg-accent-bg hover:text-accent-dark disabled:cursor-not-allowed disabled:opacity-35 disabled:hover:bg-transparent disabled:hover:text-foreground"
         >
-          <ChevronRightIcon />
+          <ChevronRightIcon {...ARROW_PROPS} />
         </button>
       </div>
     </div>
