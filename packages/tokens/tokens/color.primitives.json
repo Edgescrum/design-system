@@ -73,6 +73,7 @@
       "50": { "$type": "color", "$value": "oklch(98.5% 0.002 247.839)" },
       "100": { "$type": "color", "$value": "oklch(96.7% 0.003 264.542)" },
       "200": { "$type": "color", "$value": "oklch(92.8% 0.006 264.531)" },
+      "300": { "$type": "color", "$value": "oklch(87.2% 0.01 258.338)", "$description": "Toggle の OFF 状態（bg-gray-300）。2026-10-05 の Figma 化で未収載が判明" },
       "400": { "$type": "color", "$value": "oklch(70.7% 0.022 261.325)" },
       "500": { "$type": "color", "$value": "oklch(55.1% 0.027 264.364)" },
       "700": { "$type": "color", "$value": "oklch(37.3% 0.034 259.733)" }
