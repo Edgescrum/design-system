@@ -1,6 +1,6 @@
 {
   "name": "@edgescrum/peco-ui",
-  "version": "0.2.1",
+  "version": "0.3.0",
   "description": "PeCo UI components — React + Tailwind CSS v4. Consumers must include this package in Tailwind's @source scan.",
   "license": "MIT",
   "type": "module",
