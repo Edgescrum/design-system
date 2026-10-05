@@ -5,11 +5,16 @@
     "3xs": { "$type": "dimension", "$value": "0.625rem" }
   },
   "radius": {
-    "$description": "角丸の役割トークン。実測の最頻値から抽出（rounded-xl 587 回が最頻・カード面は rounded-2xl 304 回）。",
+    "$description": "角丸の役割トークン。実測の最頻値から抽出（2026-10-06 再計測: rounded-xl 403 / rounded-full 331 / rounded-2xl 317 / rounded-lg 208 / rounded-md 41 / rounded-3xl 13 / rounded-sm 2）。rounded-full は Tailwind 標準でそのまま使えるので役割トークンを作らない。rounded-md 以下の段は用途が定まっておらず、収載すると「迷ったら md」の受け皿になるため意図的に外してある。",
     "control": {
       "$type": "dimension",
       "$value": "0.75rem",
       "$description": "ボタン・入力欄などの操作要素（= rounded-xl）"
+    },
+    "control-sm": {
+      "$type": "dimension",
+      "$value": "0.5rem",
+      "$description": "小さい操作要素と小さい面（= rounded-lg）。アイコンボタン（h-8 w-8 / h-9 w-9）・チップ・ポップオーバー内の項目・注記ボックスがこの段。2026-10-05 の Figma 化で Pagination のページ送りと AppHeader の戻るボタンがこの値を必要として未収載が判明した"
     },
     "surface": {
       "$type": "dimension",
