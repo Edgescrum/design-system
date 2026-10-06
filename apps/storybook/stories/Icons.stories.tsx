@@ -17,7 +17,6 @@ import {
   LinkIcon,
   MenuListIcon,
   MessageIcon,
-  PecoLogo,
   PhoneIcon,
   PlusIcon,
   ReceiptIcon,
@@ -79,12 +78,11 @@ export const Gallery: Story = {
             <code className="text-center text-3xs text-muted">{name}</code>
           </div>
         ))}
-        <div className="flex flex-col items-center gap-2 rounded-xl bg-card p-4">
-          <span className="flex h-8 items-center justify-center">
-            <PecoLogo aria-label="PeCo" className="h-6" />
-          </span>
-          <code className="text-center text-3xs text-muted">PecoLogo</code>
-        </div>
+        {/*
+          ★ ブランドマーク（旧 `PecoLogo`）はここに**無い**（ADR 0026 / 2026-10-06）。
+            共通層にプロダクト #1 のロゴが入っていた状態を解消し、product 層へ戻した。
+            ロゴが必要な共通部品は slot で受け取る（`FullScreenLoading` の `logo`）。
+        */}
       </div>
       <div className="flex items-center gap-4">
         <code className="text-xs text-muted">HeartIcon filled</code>
