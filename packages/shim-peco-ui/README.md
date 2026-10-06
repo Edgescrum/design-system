@@ -41,6 +41,24 @@ import 元が `peco-ui` のままでも `@source` が `ds-core` を向いてい�
 別の実装になる（移行期間 = まさに両方の import が混在している時期に起きる）。
 peerDependency なら消費側の 1 つのコピーに必ず解決する。
 
+**★ ただし changesets は既定で「peer 依存が上がったら dependent を major に上げ、
+peer の範囲も上げ先に合わせて狭める」。** 実測では `ds-core` 0.4.0 → 0.5.0 の bump で
+shim が `1.0.0` → **`2.0.0`** になり、`>=0.4.0` が **`>=0.5.0` に狭められた**（PR #31）。
+これでは広い範囲にした意味が無くなり（消費側が `ds-core` を上げるたびに shim も
+上げ直すことになる）、非推奨パッケージに無意味な major が積まれる。
+`.changeset/config.json` の
+
+```json
+"___experimentalUnsafeOptions_WILL_CHANGE_IN_PATCH": {
+  "onlyUpdatePeerDependentsWhenOutOfRange": true
+}
+```
+
+で「範囲から外れたときだけ上げる」に変えてある。**この行を消すと上の挙動に戻る。**
+（JSON にコメントが書けないので理由はここに置く。このキーは `config@3.1.x` の
+JSON schema には載っていないが、`@changesets/config` も `assemble-release-plan` も
+読んでいる —— 既定値は `false`。）
+
 ### 3. バージョンは **1.0.0 から**
 
 最後に publish した実体は `@edgescrum/peco-ui@0.4.0`。shim を `0.4.1` で出すと、
