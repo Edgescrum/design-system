@@ -21,11 +21,13 @@
     "./css": "./dist/css/tokens.css",
     "./primitives.css": "./dist/css/primitives.css",
     "./theme.css": "./dist/css/theme.css",
+    "./modes/*": "./dist/css/modes/*",
     "./tokens.json": "./dist/json/tokens.json"
   },
   "scripts": {
     "build": "node build.mjs",
-    "sync:figma": "node scripts/sync-figma.mjs"
+    "sync:figma": "node scripts/sync-figma.mjs",
+    "verify": "node verify.mjs"
   },
   "devDependencies": {
     "style-dictionary": "^5.1.0"
