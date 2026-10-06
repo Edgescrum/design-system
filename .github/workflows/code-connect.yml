@@ -17,7 +17,13 @@ on:
 
 jobs:
   publish:
-    if: github.repository == 'Edgescrum/peco-design-system'
+    # ★ リポジトリ名ではなく **owner** で判定する（2026-10-06）。
+    #   以前は `github.repository == 'Edgescrum/peco-design-system'` だった。
+    #   これは job レベルの if なので、**false になるとジョブが skip され
+    #   ワークフローは success を返す** — publish も同期も緑のまま静かに止まる。
+    #   リポジトリ改名（§9-3: design-system）でそれを踏むところだった。
+    #   owner 判定ならフォークは従来どおり弾き、改名では壊れない。
+    if: github.repository_owner == 'Edgescrum'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
