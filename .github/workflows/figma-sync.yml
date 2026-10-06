@@ -3,12 +3,21 @@ name: Figma Variables Sync
 # トークン JSON が main に入ったら Figma Variables を自動更新する（コードが正 → Figma は写し）。
 # FIGMA_TOKEN（secret）と FIGMA_FILE_KEY（variable）の設定が必要。
 # ライブラリファイル未作成の間は未設定のままでよい（スクリプトが CI では exit 0 でスキップする）。
-
+#
+# ★ **paths は「トークンのデータ」だけでなく「同期するコード」も見る。**
+#   以前は `packages/tokens/tokens/**` だけだったため、**同期スクリプトを直しても
+#   同期が走らなかった**。#34（モード機構）で既定モード名を `Base` に揃える修正を
+#   入れたのに、触ったのが `modes/` と `scripts/` だけだったので figma-sync は
+#   起動せず、**修正が Figma に届かないまま緑で終わった**（実測）。
+#   データとコードのどちらが変わっても写しを作り直す必要がある。
 on:
   push:
     branches: [main]
     paths:
-      - "packages/tokens/tokens/**"
+      - "packages/tokens/tokens/**"        # トークンのデータ
+      - "packages/tokens/modes/**"         # セマンティックのモード（ADR 0026 Decision 3）
+      - "packages/tokens/modes.mjs"        # モードの読み込み・既定モード名
+      - "packages/tokens/scripts/**"       # 同期スクリプトと payload の組み立て
   workflow_dispatch:
 
 jobs:
