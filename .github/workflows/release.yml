@@ -59,14 +59,49 @@ jobs:
       # package.json に書けるフィールドではなくレジストリ側の操作なので、publish 後に毎回打つ。
       # 冪等なので同じ内容で何度実行してもよい。
       # ★ 失敗しても release は落とさない（publish は既に済んでいる）。ただし警告は残す。
+      #
+      # ★★ 条件は `steps.changesets.outputs.published` ではなく **NPM_TOKEN の有無**。
+      #   published 判定だと「publish が起きた run でしか直せない」ため、取りこぼしが
+      #   次の release まで残る。実際に 1 回取りこぼした（下記）。冪等なので毎回打てばよい。
+      #
+      # ★★★ publish 直後は packument に新バージョンがまだ載っていない。
+      #   `npm deprecate <pkg>`（範囲なし）は**その時点で見えているバージョンだけ**に
+      #   フラグを立てるので、publish の 5 秒後に打った結果
+      #   **peco-ui@1.0.0（たったいま publish した shim 自身）が deprecate されなかった**
+      #   —— 0.1.0〜0.4.0 にはついた。ログに `deprecating ...@1.0.0` が無いことで判る。
+      #   そこで反映を待ってから打つ。省略版 packument（npm install が使う形式）を
+      #   見るのは、full packument 側が publish 前の 404 を CDN に負キャッシュされていて
+      #   数分間 404 を返し続けるため（これも実測）。
       - name: deprecate old package names
-        if: steps.changesets.outputs.published == 'true'
+        if: steps.npm.outputs.present == 'true'
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
         run: |
+          wait_for() {  # $1 = pkg, $2 = 待つバージョン
+            for _ in $(seq 1 30); do
+              if curl -fsS -H 'Accept: application/vnd.npm.install-v1+json' \
+                   "https://registry.npmjs.org/$(printf '%s' "$1" | sed 's|/|%2f|')" \
+                 | grep -q "\"$2\""; then return 0; fi
+              sleep 4
+            done
+            echo "::warning::$1@$2 が packument に出てこなかった（deprecate は取りこぼす可能性あり）"
+          }
+          wait_for "@edgescrum/peco-ui" "$(node -p "require('./packages/shim-peco-ui/package.json').version")"
+
           npm deprecate "@edgescrum/peco-tokens" \
             "Renamed to @edgescrum/ds-foundation (ADR 0026). No shim is published for this name." \
             || echo "::warning::npm deprecate @edgescrum/peco-tokens に失敗した（publish 自体は成功）"
           npm deprecate "@edgescrum/peco-ui" \
             "Renamed to @edgescrum/ds-core (ADR 0026). 1.x is a re-export shim for migration only; set Tailwind @source to @edgescrum/ds-core." \
             || echo "::warning::npm deprecate @edgescrum/peco-ui に失敗した（publish 自体は成功）"
+
+          echo "### deprecate 後の状態" >> "$GITHUB_STEP_SUMMARY"
+          for p in @edgescrum/peco-tokens @edgescrum/peco-ui; do
+            curl -fsS "https://registry.npmjs.org/$(printf '%s' "$p" | sed 's|/|%2f|')" \
+              | node -e '
+                let s="";process.stdin.on("data",d=>s+=d).on("end",()=>{
+                  const d=JSON.parse(s);
+                  const rows=Object.entries(d.versions).map(([v,m])=>`${v}:${m.deprecated?"deprecated":"★未設定"}`);
+                  console.log(`- **${d.name}** — ${rows.join(" / ")}`);
+                })' >> "$GITHUB_STEP_SUMMARY" || true
+          done
