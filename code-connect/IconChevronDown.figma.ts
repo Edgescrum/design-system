@@ -8,7 +8,7 @@ import figma from "figma";
 // トリガーであってアイコンではないので、回転をこの中に入れない。
 export default {
   example: figma.code`<ChevronDownIcon />`,
-  imports: ['import { ChevronDownIcon } from "@edgescrum/peco-ui"'],
+  imports: ['import { ChevronDownIcon } from "@edgescrum/ds-core"'],
   id: "icon-chevron-down",
   metadata: { nestable: true },
 };

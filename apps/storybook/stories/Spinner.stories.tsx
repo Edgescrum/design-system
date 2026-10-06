@@ -1,5 +1,5 @@
 import type { Meta, StoryObj } from "@storybook/react-vite";
-import { Spinner } from "@edgescrum/peco-ui";
+import { Spinner } from "@edgescrum/ds-core";
 
 const SIZES = ["sm", "md", "lg"] as const;
 

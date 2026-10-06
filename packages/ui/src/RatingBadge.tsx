@@ -23,7 +23,7 @@
  *
  * ## 色の出どころ
  *
- * `@edgescrum/peco-tokens` の `rating/*`。1〜3 と範囲外は peco の旧実装と同値
+ * `@edgescrum/ds-foundation` の `rating/*`。1〜3 と範囲外は peco の旧実装と同値
  * （= 画素差分なし）、**4・5 は emerald → green の統一で色が変わる**（同裁定の A）。
  */
 

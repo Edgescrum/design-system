@@ -25,7 +25,7 @@ export default {
   label="${label}"
   stepNames={["基本情報", "日時", "確認", "完了"]}
 />`,
-  imports: ['import { StepProgress } from "@edgescrum/peco-ui"'],
+  imports: ['import { StepProgress } from "@edgescrum/ds-core"'],
   id: "step-progress",
   metadata: { nestable: true },
 };

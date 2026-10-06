@@ -1,5 +1,5 @@
 import type { Meta, StoryObj } from "@storybook/react-vite";
-import { StepProgress } from "@edgescrum/peco-ui";
+import { StepProgress } from "@edgescrum/ds-core";
 
 const meta = {
   title: "Components/StepProgress",

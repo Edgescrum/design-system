@@ -13,7 +13,7 @@ export default {
   //     が本文と同じ横 padding を内包する。
   // 幅に収まらないときは**ページではなくタブバーが**横スクロールする（#2266）。
   example: figma.code`<TabList>${tabs}</TabList>`,
-  imports: ['import { TabList } from "@edgescrum/peco-ui"'],
+  imports: ['import { TabList } from "@edgescrum/ds-core"'],
   id: "tab-bar",
   metadata: { nestable: false },
 };

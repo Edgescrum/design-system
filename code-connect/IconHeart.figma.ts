@@ -7,7 +7,7 @@ import figma from "figma";
 // お気に入りの ON / OFF に使う（Figma 側は線のみの状態を置いている）。
 export default {
   example: figma.code`<HeartIcon />`,
-  imports: ['import { HeartIcon } from "@edgescrum/peco-ui"'],
+  imports: ['import { HeartIcon } from "@edgescrum/ds-core"'],
   id: "icon-heart",
   metadata: { nestable: true },
 };

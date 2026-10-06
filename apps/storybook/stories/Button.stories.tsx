@@ -1,5 +1,5 @@
 import type { Meta, StoryObj } from "@storybook/react-vite";
-import { Button, type ButtonSize, type ButtonVariant } from "@edgescrum/peco-ui";
+import { Button, type ButtonSize, type ButtonVariant } from "@edgescrum/ds-core";
 
 const VARIANTS: ButtonVariant[] = [
   "primary",

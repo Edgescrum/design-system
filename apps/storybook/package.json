@@ -1,5 +1,5 @@
 {
-  "name": "peco-storybook",
+  "name": "ds-storybook",
   "private": true,
   "type": "module",
   "scripts": {
@@ -8,8 +8,8 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
-    "@edgescrum/peco-tokens": "workspace:*",
-    "@edgescrum/peco-ui": "workspace:*",
+    "@edgescrum/ds-foundation": "workspace:*",
+    "@edgescrum/ds-core": "workspace:*",
     "react": "^19.0.0",
     "react-dom": "^19.0.0"
   },

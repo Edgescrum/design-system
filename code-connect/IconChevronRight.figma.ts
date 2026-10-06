@@ -8,7 +8,7 @@ import figma from "figma";
 // width / height を明示すること。色は currentColor なので親の text-* で決まる。
 export default {
   example: figma.code`<ChevronRightIcon />`,
-  imports: ['import { ChevronRightIcon } from "@edgescrum/peco-ui"'],
+  imports: ['import { ChevronRightIcon } from "@edgescrum/ds-core"'],
   id: "icon-chevron-right",
   metadata: { nestable: true },
 };

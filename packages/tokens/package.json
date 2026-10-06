@@ -1,12 +1,13 @@
 {
-  "name": "@edgescrum/peco-tokens",
+  "name": "@edgescrum/ds-foundation",
   "version": "0.3.0",
-  "description": "PeCo design tokens — DTCG JSON as the source of truth, built to CSS variables and a Tailwind v4 theme",
+  "description": "Edgescrum design system — foundation layer. DTCG JSON as the source of truth, built to CSS variables and a Tailwind v4 theme. The minimum bar every Edgescrum product meets.",
   "license": "MIT",
   "type": "module",
+  "homepage": "https://design-system-storybook-gules.vercel.app",
   "repository": {
     "type": "git",
-    "url": "https://github.com/Edgescrum/peco-design-system.git",
+    "url": "https://github.com/Edgescrum/design-system.git",
     "directory": "packages/tokens"
   },
   "publishConfig": {

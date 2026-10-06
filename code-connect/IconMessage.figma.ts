@@ -8,7 +8,7 @@ import figma from "figma";
 // width / height を明示すること。色は currentColor なので親の text-* で決まる。
 export default {
   example: figma.code`<MessageIcon />`,
-  imports: ['import { MessageIcon } from "@edgescrum/peco-ui"'],
+  imports: ['import { MessageIcon } from "@edgescrum/ds-core"'],
   id: "icon-message",
   metadata: { nestable: true },
 };

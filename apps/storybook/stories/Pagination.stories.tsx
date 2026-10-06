@@ -1,6 +1,6 @@
 import { useState } from "react";
 import type { Meta, StoryObj } from "@storybook/react-vite";
-import { DEFAULT_PAGE_SIZE, Pagination } from "@edgescrum/peco-ui";
+import { DEFAULT_PAGE_SIZE, Pagination } from "@edgescrum/ds-core";
 
 const meta = {
   title: "Components/Pagination",

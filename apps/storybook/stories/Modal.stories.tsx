@@ -1,6 +1,6 @@
 import { useState } from "react";
 import type { Meta, StoryObj } from "@storybook/react-vite";
-import { Button, Modal, SheetActions } from "@edgescrum/peco-ui";
+import { Button, Modal, SheetActions } from "@edgescrum/ds-core";
 
 const meta = {
   title: "Components/Modal",

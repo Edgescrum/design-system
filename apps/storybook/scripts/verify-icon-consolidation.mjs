@@ -10,7 +10,7 @@
  *
  * ## 走らせ方
  *
- *   pnpm --filter @edgescrum/peco-ui build   # dist を作ってから
+ *   pnpm --filter @edgescrum/ds-core build   # dist を作ってから
  *   node apps/storybook/scripts/verify-icon-consolidation.mjs
  *
  * **このディレクトリに置いてあるのは react-dom がここにしか無いから。**

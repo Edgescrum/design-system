@@ -26,7 +26,7 @@ export default {
     ${confirm}
   </div>
 </Modal>`,
-  imports: ['import { Modal } from "@edgescrum/peco-ui"'],
+  imports: ['import { Modal } from "@edgescrum/ds-core"'],
   id: "modal",
   metadata: { nestable: false },
 };

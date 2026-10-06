@@ -1,0 +1,35 @@
+{
+  "name": "@edgescrum/peco-ui",
+  "version": "1.0.0",
+  "description": "DEPRECATED — renamed to @edgescrum/ds-core (ADR 0026). This package only re-exports it.",
+  "license": "MIT",
+  "type": "module",
+  "homepage": "https://design-system-storybook-gules.vercel.app",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/Edgescrum/design-system.git",
+    "directory": "packages/shim-peco-ui"
+  },
+  "publishConfig": {
+    "access": "public"
+  },
+  "files": [
+    "index.js",
+    "index.d.ts"
+  ],
+  "exports": {
+    ".": {
+      "types": "./index.d.ts",
+      "default": "./index.js"
+    }
+  },
+  "sideEffects": false,
+  "peerDependencies": {
+    "@edgescrum/ds-core": ">=0.4.0",
+    "react": "^18.0.0 || ^19.0.0",
+    "react-dom": "^18.0.0 || ^19.0.0"
+  },
+  "devDependencies": {
+    "@edgescrum/ds-core": "workspace:*"
+  }
+}

@@ -27,7 +27,7 @@ export default {
   // variant / size は既定値（primary / md）のときも明示する。
   // Figma 側で選んだ値がそのまま読めるほうが、実装時の取りこぼしが無い。
   example: figma.code`<Button variant="${variant}" size="${size}">${label}</Button>`,
-  imports: ['import { Button } from "@edgescrum/peco-ui"'],
+  imports: ['import { Button } from "@edgescrum/ds-core"'],
   id: "button",
   metadata: { nestable: true },
 };

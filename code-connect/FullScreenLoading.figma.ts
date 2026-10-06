@@ -12,7 +12,7 @@ export default {
     message === "読み込み中..."
       ? figma.code`<FullScreenLoading />`
       : figma.code`<FullScreenLoading message="${message}" />`,
-  imports: ['import { FullScreenLoading } from "@edgescrum/peco-ui"'],
+  imports: ['import { FullScreenLoading } from "@edgescrum/ds-core"'],
   id: "full-screen-loading",
   metadata: { nestable: false },
 };

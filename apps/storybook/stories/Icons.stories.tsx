@@ -24,7 +24,7 @@ import {
   SparklesIcon,
   TrashIcon,
   UserIcon,
-} from "@edgescrum/peco-ui";
+} from "@edgescrum/ds-core";
 
 const ICONS: Array<[string, ComponentType<SVGProps<SVGSVGElement>>]> = [
   ["LineIcon", LineIcon],

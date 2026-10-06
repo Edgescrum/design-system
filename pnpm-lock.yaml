@@ -172,12 +172,12 @@ importers:
 
   apps/storybook:
     dependencies:
-      '@edgescrum/peco-tokens':
-        specifier: workspace:*
-        version: link:../../packages/tokens
-      '@edgescrum/peco-ui':
+      '@edgescrum/ds-core':
         specifier: workspace:*
         version: link:../../packages/ui
+      '@edgescrum/ds-foundation':
+        specifier: workspace:*
+        version: link:../../packages/tokens
       react:
         specifier: ^19.0.0
         version: 19.3.0
@@ -209,6 +209,19 @@ importers:
       vite:
         specifier: ^8.3.1
         version: 8.3.1(esbuild@0.27.7)(jiti@2.7.0)
+
+  packages/shim-peco-ui:
+    dependencies:
+      react:
+        specifier: ^18.0.0 || ^19.0.0
+        version: 19.3.0
+      react-dom:
+        specifier: ^18.0.0 || ^19.0.0
+        version: 19.3.0(react@19.3.0)
+    devDependencies:
+      '@edgescrum/ds-core':
+        specifier: workspace:*
+        version: link:../ui
 
   packages/tokens:
     devDependencies:

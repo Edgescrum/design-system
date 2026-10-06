@@ -25,7 +25,7 @@ const size = instance.getEnum("size", {
 
 export default {
   example: figma.code`<Badge tone="${tone}" variant="${variant}" size="${size}">${label}</Badge>`,
-  imports: ['import { Badge } from "@edgescrum/peco-ui"'],
+  imports: ['import { Badge } from "@edgescrum/ds-core"'],
   id: "badge",
   metadata: { nestable: true },
 };

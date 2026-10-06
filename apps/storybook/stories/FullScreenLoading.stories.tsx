@@ -1,5 +1,5 @@
 import type { Meta, StoryObj } from "@storybook/react-vite";
-import { FullScreenLoading } from "@edgescrum/peco-ui";
+import { FullScreenLoading } from "@edgescrum/ds-core";
 
 /**
  * ★ ブランドマークは **DS が持たない**（ADR 0026 / 2026-10-06）。

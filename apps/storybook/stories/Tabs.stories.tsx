@@ -1,6 +1,6 @@
 import { useState } from "react";
 import type { Meta, StoryObj } from "@storybook/react-vite";
-import { TabButton, TabFilter, TabList } from "@edgescrum/peco-ui";
+import { TabButton, TabFilter, TabList } from "@edgescrum/ds-core";
 
 const meta = {
   title: "Components/Tabs",

@@ -29,7 +29,7 @@ export default {
   ${control}
 </div>`,
   imports: [
-    'import { FormLabel, FormInput, FormTextarea } from "@edgescrum/peco-ui"',
+    'import { FormLabel, FormInput, FormTextarea } from "@edgescrum/ds-core"',
   ],
   id: "form-field",
   metadata: { nestable: true },

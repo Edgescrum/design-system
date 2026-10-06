@@ -3,7 +3,7 @@
 import figma from "figma";
 
 // ★ **ブランドマークは DS に無い**（ADR 0026 / 2026-10-06）。
-//   以前は `@edgescrum/peco-ui` から export していたが、共通層にプロダクト #1 の
+//   以前は `@edgescrum/ds-core` から export していたが、共通層にプロダクト #1 の
 //   ブランドが焼き付いている状態だったので product 層へ戻した。
 //   実体は peco 側の `src/components/icons/PecoLogo.tsx`。
 //
