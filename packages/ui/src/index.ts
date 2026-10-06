@@ -65,5 +65,7 @@ export {
   LinkIcon,
   SparklesIcon,
   ExternalLinkIcon,
-  PecoLogo,
+  // ★ ブランドマーク（旧 `PecoLogo`）は **export しない**（ADR 0026）。
+  //   product 層が持つ。共通部品で必要な場所は slot で受け取る
+  //   （`FullScreenLoading` の `logo` が唯一の例）。
 } from "./icons";
