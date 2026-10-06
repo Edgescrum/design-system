@@ -48,6 +48,7 @@ tokens/*.json (DTCG) ← 唯一の正
 pnpm install
 pnpm build        # 全パッケージのビルド（tokens → Style Dictionary / ui → tsup）
 pnpm typecheck
+pnpm verify       # トークンの機械検査（モード機構を含む）
 pnpm --filter ds-storybook dev   # カタログをローカルで（http://localhost:6006）
 ```
 
@@ -74,6 +75,29 @@ Vercel の設定（2026-10-06 時点）:
 `workspace:*` で、stories は `@edgescrum/ds-core` の**ビルド済み dist** を参照している。
 ルートの `pnpm build`（= `pnpm -r build`）が tokens → ui → storybook の順に回すことで初めて
 解決できる。`apps/storybook` をルートにすると workspace の外が見えず install に失敗する。
+
+## セマンティックのモード（ADR 0026 Decision 3）
+
+判定表の第 3 カテゴリ「**構造は共通・値が個別**」（管理画面の幅・アクセント色など）の受け皿。
+**semantic だけがモードを持ち、primitives は持たない**（生のパレットはブランドで変わらない）。
+
+| 層 | モード |
+|---|---|
+| `color.primitives.json` | **持たない**（`verify.mjs` が機械的に拒否する） |
+| `color.semantic.json` | **持つ** —— `modes/<名>.json` に差分を書く |
+
+**実在するモードは現在 0 件**（プロダクトが PeCo 1 つなので既定で足りる）。
+機構だけ先に入れてあるのは、semantic が 19 変数の今が最安だから。
+手順と注意は [`packages/tokens/modes/README.md`](packages/tokens/modes) を読むこと。
+
+★ **モードファイルは `tokens/` の外に置く。** Style Dictionary の source が
+`tokens/**/*.json` なので、中に置くと**モードが通常のトークンとして読まれ既定の
+`:root` を上書きする**（実装中に実測。モードが 0 件のあいだは起きないので、
+最初のプロダクトがモードを足した日に PeCo の既定が壊れる形で出る）。
+
+```bash
+pnpm verify   # トークンの機械検査（モード機構を含む）。CI でも走る
+```
 
 ## トークンの変更フロー
 

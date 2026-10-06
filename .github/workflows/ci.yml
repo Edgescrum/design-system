@@ -18,6 +18,11 @@ jobs:
       - run: pnpm install --frozen-lockfile
       - run: pnpm build
       - run: pnpm typecheck
+      # トークンの機械検査（モード機構を含む・ADR 0026 作業 3）。
+      # 実在するモードは 0 件なので、標本（packages/tokens/fixtures/）で
+      # 全経路を通す。実行されない経路が黙って壊れた実例があるため
+      # （Figma の既定モード名を設定するコードが空のループだった）。
+      - run: pnpm verify
       # 生成物の妥当性: セマンティック CSS が peco の既存 :root と同じ変数を全部含むこと
       - name: verify token css output
         run: |

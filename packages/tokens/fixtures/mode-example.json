@@ -1,0 +1,16 @@
+{
+  "$description": "モード機構の検証用の標本（ADR 0026 Decision 3）。verify.mjs がこれを使ってモードの経路（検証 → CSS 生成 → Figma payload）を実行する。★ tokens/ の外に置いてあるので dist には 1 バイトも入らない。実在するプロダクトのモードを足すときは tokens/modes/<名>.json に置くこと。",
+  "accent": {
+    "$value": "{color.blue.700}"
+  },
+  "accent-dark": {
+    "$value": "{color.blue.900}"
+  },
+  "rating": {
+    "3": {
+      "fg": {
+        "$value": "{color.gray.600}"
+      }
+    }
+  }
+}
