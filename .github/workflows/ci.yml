@@ -18,10 +18,18 @@ jobs:
       - run: pnpm install --frozen-lockfile
       - run: pnpm build
       - run: pnpm typecheck
+      # 層の向き（ADR 0026 §9-3・作業 5）。foundation → core / core → local /
+      # local:X → local:Y と旧名 @edgescrum/peco-* を error にする。
+      # 定義は layers.mjs の 1 箇所だけ（eslint と verify が同じものを読む）。
+      - run: pnpm lint
       # トークンの機械検査（モード機構を含む・ADR 0026 作業 3）。
       # 実在するモードは 0 件なので、標本（packages/tokens/fixtures/）で
       # 全経路を通す。実行されない経路が黙って壊れた実例があるため
       # （Figma の既定モード名を設定するコードが空のループだった）。
+      #
+      # 層の検査（作業 5）も同じ `verify` に乗る。local のディレクトリはまだ空なので、
+      # **ESLint を API から呼んで標本コードを食わせる**ことで境界の規則が実際に
+      # 発火することを毎回実測する（`pnpm lint` だけでは「対象 0 件」でも緑になる）。
       - run: pnpm verify
       # 生成物の妥当性: セマンティック CSS が peco の既存 :root と同じ変数を全部含むこと
       - name: verify token css output

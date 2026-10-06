@@ -25,7 +25,8 @@
   "sideEffects": false,
   "scripts": {
     "build": "tsup",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "verify": "node verify.mjs"
   },
   "peerDependencies": {
     "react": "^18.0.0 || ^19.0.0",
