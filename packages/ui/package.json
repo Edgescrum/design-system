@@ -1,12 +1,13 @@
 {
-  "name": "@edgescrum/peco-ui",
+  "name": "@edgescrum/ds-core",
   "version": "0.4.0",
-  "description": "PeCo UI components — React + Tailwind CSS v4. Consumers must include this package in Tailwind's @source scan.",
+  "description": "Edgescrum design system — core layer. Audience-agnostic React components (Tailwind CSS v4). Consumers must include this package in Tailwind's @source scan.",
   "license": "MIT",
   "type": "module",
+  "homepage": "https://design-system-storybook-gules.vercel.app",
   "repository": {
     "type": "git",
-    "url": "https://github.com/Edgescrum/peco-design-system.git",
+    "url": "https://github.com/Edgescrum/design-system.git",
     "directory": "packages/ui"
   },
   "publishConfig": {

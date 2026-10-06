@@ -1,5 +1,5 @@
 import type { Meta, StoryObj } from "@storybook/react-vite";
-import { Alert } from "@edgescrum/peco-ui";
+import { Alert } from "@edgescrum/ds-core";
 
 const TYPES = ["error", "success", "warning"] as const;
 

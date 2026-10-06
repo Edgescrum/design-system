@@ -16,7 +16,7 @@ if (icon && icon.type === "INSTANCE" && icon.hasCodeConnect()) {
 export default {
   // ★ これは DS の部品ではない。peco の
   //   `src/app/provider/[slug]/provider-nav.tsx`（モバイル時のヘッダー）の写しで、
-  //   @edgescrum/peco-ui には存在しない。import を足さないこと。
+  //   @edgescrum/ds-core には存在しない。import を足さないこと。
   // ★★ **ここにボタンを足さないこと**（#2039 → #2090）。
   //   ヘッダーは「戻る + 画面名（+ 店舗名）」だけで、操作は本文か SheetActions に置く。
   //   足すたびに幅が足りなくなり、タイトルが 2 行に折れて戻るボタンが押しにくくなる。

@@ -1,4 +1,4 @@
-# @edgescrum/peco-tokens
+# @edgescrum/ds-foundation（旧 @edgescrum/peco-tokens）
 
 ## 0.3.0
 

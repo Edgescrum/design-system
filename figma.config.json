@@ -3,7 +3,7 @@
     "parser": "react",
     "include": ["code-connect/**/*.figma.ts"],
     "importPaths": {
-      "packages/ui/src/*": "@edgescrum/peco-ui"
+      "packages/ui/src/*": "@edgescrum/ds-core"
     }
   }
 }

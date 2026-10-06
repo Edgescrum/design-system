@@ -16,7 +16,7 @@ export default {
     size === "md"
       ? figma.code`<Spinner />`
       : figma.code`<Spinner size="${size}" />`,
-  imports: ['import { Spinner } from "@edgescrum/peco-ui"'],
+  imports: ['import { Spinner } from "@edgescrum/ds-core"'],
   id: "spinner",
   metadata: { nestable: true },
 };

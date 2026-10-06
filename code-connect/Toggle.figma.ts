@@ -13,7 +13,7 @@ export default {
   // onChange は必須。ON 色は既定で bg-success（LINE 緑）で、
   // 変えるときだけ activeColor を渡す。
   example: figma.code`<Toggle checked={${checked}} onChange={setChecked} ariaLabel="" />`,
-  imports: ['import { Toggle } from "@edgescrum/peco-ui"'],
+  imports: ['import { Toggle } from "@edgescrum/ds-core"'],
   id: "toggle",
   metadata: { nestable: true },
 };

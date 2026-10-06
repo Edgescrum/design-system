@@ -1,5 +1,5 @@
 import type { Meta, StoryObj } from "@storybook/react-vite";
-import { Badge, type BadgeTone, type BadgeVariant } from "@edgescrum/peco-ui";
+import { Badge, type BadgeTone, type BadgeVariant } from "@edgescrum/ds-core";
 
 const TONES: BadgeTone[] = ["neutral", "accent", "danger", "warning", "positive", "info"];
 const VARIANTS: BadgeVariant[] = ["solid", "soft", "outline"];

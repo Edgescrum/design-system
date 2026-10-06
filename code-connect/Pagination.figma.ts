@@ -18,7 +18,7 @@ export default {
   onPageChange={setPage}
 />`,
   imports: [
-    'import { Pagination, DEFAULT_PAGE_SIZE } from "@edgescrum/peco-ui"',
+    'import { Pagination, DEFAULT_PAGE_SIZE } from "@edgescrum/ds-core"',
   ],
   id: "pagination",
   metadata: { nestable: true },

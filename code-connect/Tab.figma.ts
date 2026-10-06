@@ -25,7 +25,7 @@ export default {
   ${showCount ? figma.code`count={${count}}` : ""}
   onClick={() => setTab("${label}")}
 />`,
-  imports: ['import { TabButton } from "@edgescrum/peco-ui"'],
+  imports: ['import { TabButton } from "@edgescrum/ds-core"'],
   id: "tab",
   metadata: { nestable: true },
 };

@@ -28,7 +28,7 @@ export default {
   ${state === "placeholder" ? `placeholder="${text}"` : ""}
   ariaLabel="選択"
 />`,
-  imports: ['import { SelectDropdown } from "@edgescrum/peco-ui"'],
+  imports: ['import { SelectDropdown } from "@edgescrum/ds-core"'],
   id: "select-dropdown",
   metadata: { nestable: true },
 };

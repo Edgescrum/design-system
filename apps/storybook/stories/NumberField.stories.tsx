@@ -1,6 +1,6 @@
 import { useState } from "react";
 import type { Meta, StoryObj } from "@storybook/react-vite";
-import { FormLabel, NumberField } from "@edgescrum/peco-ui";
+import { FormLabel, NumberField } from "@edgescrum/ds-core";
 
 const meta = {
   title: "Components/NumberField",

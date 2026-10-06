@@ -1,5 +1,5 @@
 import type { Meta, StoryObj } from "@storybook/react-vite";
-import { FormInput, FormLabel, FormTextarea } from "@edgescrum/peco-ui";
+import { FormInput, FormLabel, FormTextarea } from "@edgescrum/ds-core";
 
 const meta = {
   title: "Components/FormField",

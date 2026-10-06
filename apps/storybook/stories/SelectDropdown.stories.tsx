@@ -1,6 +1,6 @@
 import { useState } from "react";
 import type { Meta, StoryObj } from "@storybook/react-vite";
-import { SelectDropdown } from "@edgescrum/peco-ui";
+import { SelectDropdown } from "@edgescrum/ds-core";
 
 const OPTIONS = [
   { value: "cut", label: "カット（60 分）" },

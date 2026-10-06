@@ -15,7 +15,7 @@ export default {
   // role は部品側が type から決める（error=alert / その他=status・#1165）。
   // 呼び出し側で role を巻かないこと。
   example: figma.code`<Alert type="${type}">${message}</Alert>`,
-  imports: ['import { Alert } from "@edgescrum/peco-ui"'],
+  imports: ['import { Alert } from "@edgescrum/ds-core"'],
   id: "alert",
   metadata: { nestable: true },
 };

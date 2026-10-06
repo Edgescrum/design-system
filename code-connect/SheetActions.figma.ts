@@ -16,7 +16,7 @@ export default {
   // surface は「操作行が乗っている面と同じ色」を選ぶこと。違う色にすると、
   // 貼り付いていない通常時に色の違う帯が見えて「見た目が変わらない」が壊れる。
   example: figma.code`<SheetActions surface="${surface}" className="mt-5 flex gap-2">${actions}</SheetActions>`,
-  imports: ['import { SheetActions } from "@edgescrum/peco-ui"'],
+  imports: ['import { SheetActions } from "@edgescrum/ds-core"'],
   id: "sheet-actions",
   metadata: { nestable: true },
 };

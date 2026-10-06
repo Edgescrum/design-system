@@ -28,10 +28,19 @@ tokens/*.json (DTCG) ← 唯一の正
 
 ## パッケージ
 
-| パッケージ | 内容 |
-|---|---|
-| [`@edgescrum/peco-tokens`](packages/tokens) | デザイントークン（DTCG JSON + 生成 CSS） |
-| [`@edgescrum/peco-ui`](packages/ui) | React コンポーネント（Tailwind CSS v4） |
+| パッケージ | 層 | 内容 |
+|---|---|---|
+| [`@edgescrum/ds-foundation`](packages/tokens) | foundation | デザイントークン（DTCG JSON + 生成 CSS）。全プロダクト必須の minimum bar |
+| [`@edgescrum/ds-core`](packages/ui) | core | オーディエンスを問わない React コンポーネント（Tailwind CSS v4） |
+| [`@edgescrum/peco-ui`](packages/shim-peco-ui) | — | **非推奨。** `ds-core` への再 export のみ（[理由と注意](packages/shim-peco-ui/README.md)） |
+
+**ディレクトリ名（`packages/tokens` / `packages/ui`）は改名していない。** 公開 API は
+パッケージ名だけで、ディレクトリ名は Code Connect の `// source=` が指す実パスとして
+41 本のテンプレートから参照されている。改名の利得が無いので据え置く。
+
+旧名 `@edgescrum/peco-tokens` には shim を**作らない**。消費側の参照が
+`globals.css` の `@import` 2 行しかなく、人質になり得ないため（`ds-foundation` と
+両方 import すると `:root` が二重定義されるので、むしろ同時併存させてはいけない）。
 
 ## 開発
 
@@ -39,7 +48,7 @@ tokens/*.json (DTCG) ← 唯一の正
 pnpm install
 pnpm build        # 全パッケージのビルド（tokens → Style Dictionary / ui → tsup）
 pnpm typecheck
-pnpm --filter storybook dev   # カタログをローカルで（http://localhost:6006）
+pnpm --filter ds-storybook dev   # カタログをローカルで（http://localhost:6006）
 ```
 
 ## カタログ（Storybook）
@@ -62,7 +71,7 @@ Vercel の設定（2026-10-06 時点）:
 | Framework Preset | Other |
 
 ★ **Root Directory を `apps/storybook` にしてはいけない。** `apps/storybook` の依存は
-`workspace:*` で、stories は `@edgescrum/peco-ui` の**ビルド済み dist** を参照している。
+`workspace:*` で、stories は `@edgescrum/ds-core` の**ビルド済み dist** を参照している。
 ルートの `pnpm build`（= `pnpm -r build`）が tokens → ui → storybook の順に回すことで初めて
 解決できる。`apps/storybook` をルートにすると workspace の外が見えず install に失敗する。
 
@@ -80,10 +89,15 @@ Vercel の設定（2026-10-06 時点）:
 
 ```css
 /* globals.css */
-@import "@edgescrum/peco-tokens/css";     /* :root セマンティック変数 */
-@import "@edgescrum/peco-tokens/theme.css"; /* @theme inline */
-@source "../node_modules/@edgescrum/peco-ui"; /* Tailwind v4 のクラス走査対象に追加 */
+@import "@edgescrum/ds-foundation/css";     /* :root セマンティック変数 */
+@import "@edgescrum/ds-foundation/theme.css"; /* @theme inline */
+@source "../node_modules/@edgescrum/ds-core"; /* Tailwind v4 のクラス走査対象に追加 */
 ```
+
+★ **`@source` は必ず `ds-core` を指すこと。** 移行期間中に import 元が
+`@edgescrum/peco-ui`（shim）のままのファイルがあっても、`@source` は実体を向けておく。
+shim を走査してもクラス文字列が 1 つも無いため、**型エラーもビルドエラーも出ないまま
+見た目だけが消える**（`packages/shim-peco-ui/README.md`）。
 
 ## Figma 同期のセットアップ（リポジトリ管理者向け）
 

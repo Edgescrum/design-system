@@ -41,6 +41,7 @@ jobs:
             echo "::notice::NPM_TOKEN 未設定のため publish はスキップ（Version PR の作成のみ）"
           fi
       - name: create release PR or publish
+        id: changesets
         uses: changesets/action@v1
         with:
           # `pnpm version` は pnpm の組み込みコマンド（semver バンプ）に食われるため
@@ -53,3 +54,19 @@ jobs:
           # setup-node (registry-url 指定) が生成する .npmrc は NODE_AUTH_TOKEN を参照する。
           # これが無いと publish が無認証になり、scoped パッケージは 404 で落ちる（実測）
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+
+      # 旧名（ADR 0026 で改名）に npm の deprecate フラグを立てる。
+      # package.json に書けるフィールドではなくレジストリ側の操作なので、publish 後に毎回打つ。
+      # 冪等なので同じ内容で何度実行してもよい。
+      # ★ 失敗しても release は落とさない（publish は既に済んでいる）。ただし警告は残す。
+      - name: deprecate old package names
+        if: steps.changesets.outputs.published == 'true'
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+        run: |
+          npm deprecate "@edgescrum/peco-tokens" \
+            "Renamed to @edgescrum/ds-foundation (ADR 0026). No shim is published for this name." \
+            || echo "::warning::npm deprecate @edgescrum/peco-tokens に失敗した（publish 自体は成功）"
+          npm deprecate "@edgescrum/peco-ui" \
+            "Renamed to @edgescrum/ds-core (ADR 0026). 1.x is a re-export shim for migration only; set Tailwind @source to @edgescrum/ds-core." \
+            || echo "::warning::npm deprecate @edgescrum/peco-ui に失敗した（publish 自体は成功）"

@@ -1,4 +1,4 @@
-# @edgescrum/peco-ui
+# @edgescrum/ds-core（旧 @edgescrum/peco-ui）
 
 ## 0.4.0
 

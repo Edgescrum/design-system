@@ -4,9 +4,9 @@
  * @source は UI パッケージのソースを走査対象にする（クラス文字列は src に書かれている）。
  */
 @import "tailwindcss" source(none);
-@import "@edgescrum/peco-tokens/css";
-@import "@edgescrum/peco-tokens/primitives.css";
-@import "@edgescrum/peco-tokens/theme.css";
+@import "@edgescrum/ds-foundation/css";
+@import "@edgescrum/ds-foundation/primitives.css";
+@import "@edgescrum/ds-foundation/theme.css";
 
 @source "../../../packages/ui/src";
 @source "../stories";

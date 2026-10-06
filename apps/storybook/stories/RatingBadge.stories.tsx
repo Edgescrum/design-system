@@ -1,5 +1,5 @@
 import type { Meta, StoryObj } from "@storybook/react-vite";
-import { RatingBadge } from "@edgescrum/peco-ui";
+import { RatingBadge } from "@edgescrum/ds-core";
 
 const meta = {
   title: "Components/RatingBadge",

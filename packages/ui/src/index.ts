@@ -1,8 +1,11 @@
 /**
- * @edgescrum/peco-ui — PeCo デザインシステムのコンポーネント。
+ * @edgescrum/ds-core — Edgescrum デザインシステムの **core 層**。
+ *
+ * オーディエンス（admin / consumer / marketing）を問わず同じ意味で使える部品だけを置く。
+ * 業務概念・情報設計・**ブランドマーク**は product 層（各プロダクトのリポジトリ）の担当。
+ * 判定規則は peco の docs/adr/0026-design-system-layers-are-audience-local-systems.md。
  *
  * コア 17 部品（docs/v2/requirements/25_design-system.md §3）はここから export する。
- * 現状監査（Button の variant 集計）の完了後に実装を足していく。
  */
 export { cx } from "./cx";
 export { Button, buttonClass } from "./Button";
