@@ -1,6 +1,6 @@
 {
   "name": "@edgescrum/ds-foundation",
-  "version": "0.5.0",
+  "version": "0.6.0",
   "description": "Edgescrum design system — foundation layer. DTCG JSON as the source of truth, built to CSS variables and a Tailwind v4 theme. The minimum bar every Edgescrum product meets.",
   "license": "MIT",
   "type": "module",
