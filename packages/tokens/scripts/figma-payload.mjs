@@ -167,6 +167,8 @@ export function buildFigmaPayload({
     return { id, name, modeId: `temp_mode_${id}`, created: true };
   }
 
+  const SCOPES_BY_NAMESPACE = { space: ["GAP"], size: ["WIDTH_HEIGHT"] };
+
   function planVariables(tokens, collection, primitiveVarIds, pathIds = null) {
     const ids = new Map();
     for (const t of tokens) {
@@ -183,6 +185,10 @@ export function buildFigmaPayload({
           variableCollectionId: collection.id,
           resolvedType: isFloat ? "FLOAT" : "COLOR",
           description: t.description,
+          // ★ 既定の ALL_SCOPES だと、余白や幅の変数が色・角丸・文字サイズのピッカーにまで並ぶ。
+          //   ページ余白（space/*）は auto layout の gap / padding、本文幅（size/*）は幅・高さに限る。
+          //   作成時にだけ付ける（既存変数は Figma 側で手で絞った値を上書きしない）
+          ...(SCOPES_BY_NAMESPACE[t.path[0]] ? { scopes: SCOPES_BY_NAMESPACE[t.path[0]] } : {}),
         });
       }
       // セマンティックはプリミティブ変数への alias、プリミティブ・数値は実値
