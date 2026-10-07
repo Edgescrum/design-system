@@ -29,10 +29,12 @@
     "verify": "node verify.mjs"
   },
   "peerDependencies": {
+    "@edgescrum/ds-foundation": ">=0.6.0",
     "react": "^18.0.0 || ^19.0.0",
     "react-dom": "^18.0.0 || ^19.0.0"
   },
   "devDependencies": {
+    "@edgescrum/ds-foundation": "workspace:*",
     "@types/react": "^19.0.0",
     "@types/react-dom": "^19.0.0",
     "react": "^19.0.0",

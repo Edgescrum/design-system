@@ -17,6 +17,15 @@ export type { RatingBadgeProps } from "./RatingBadge";
 export { Spinner } from "./Spinner";
 export { Alert } from "./Alert";
 export { PageContainer } from "./PageContainer";
+// ページの骨格（ADR 0027）。シェル自体はプロダクトが持ち、DS は部品とトークンだけを持つ
+export { PageBody } from "./PageBody";
+export type { PageBodyProps, DataAttributes } from "./PageBody";
+export { AppBar, APP_BAR_BACK_CLASS } from "./AppBar";
+export type { AppBarProps } from "./AppBar";
+export { CenteredNotice } from "./CenteredNotice";
+export type { CenteredNoticeProps } from "./CenteredNotice";
+export { CONTENT_WIDTH_CLASS } from "./content-width";
+export type { ContentWidth } from "./content-width";
 export { FormLabel, FormInput, FormTextarea } from "./FormField";
 export { StepProgress } from "./StepProgress";
 export type { StepProgressProps } from "./StepProgress";

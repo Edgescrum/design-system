@@ -165,5 +165,83 @@ await check("verify:boundary — リポジトリ全体に違反が 0 件", async
   assert(problems.length === 0, `違反あり:\n  ${problems.join("\n  ")}`);
 });
 
+// ── 4. ページの骨格（ADR 0027）— 生成物の DOM を直接見る ─────────────────────────
+// 見た目の約束（「peco の今日の描画と同じ」「既定の PageTabBar は 1 バイトも変わらない」）は
+// 型でも lint でも守られないので、ビルド済みの dist を実際に描画して文字列で比べる。
+console.log("page skeleton (ADR 0027)");
+
+let ui = null;
+let renderToStaticMarkup = null;
+try {
+  ui = await import(join(HERE, "dist", "index.js"));
+  ({ renderToStaticMarkup } = await import("react-dom/server"));
+} catch (err) {
+  ui = null;
+  console.log(`  (dist の読み込みに失敗: ${err.message})`);
+}
+const { createElement: h } = await import("react");
+const html = (el) => renderToStaticMarkup(el);
+const needDist = () => assert(ui, "dist が無い。`pnpm build` を先に実行すること");
+const eq = (actual, expected, what) =>
+  assert(actual === expected, `${what}\n        期待: ${expected}\n        実際: ${actual}`);
+
+await check("verify:page-tab-bar — 既定（above-body）の DOM は従来と 1 バイトも変わらない", async () => {
+  needDist();
+  // peco の existing-plan-nav-dom.baseline.json がバイト単位で固定している形
+  eq(
+    html(h(ui.PageTabBar, null, "X")),
+    '<div class="bg-background px-4 pt-6 sm:px-8 sm:pt-8"><div class="border-b border-border"><div class="flex gap-0 overflow-x-auto">X</div></div></div>',
+    "PageTabBar（既定）"
+  );
+});
+
+await check("verify:page-tab-bar — in-body は自分の下の余白を持ち、上・左右は持たない", async () => {
+  needDist();
+  eq(
+    html(h(ui.PageTabBar, { placement: "in-body" }, "X")),
+    '<div class="pb-4 sm:pb-6"><div class="border-b border-border"><div class="flex gap-0 overflow-x-auto">X</div></div></div>',
+    "PageTabBar（in-body）"
+  );
+});
+
+await check("verify:page-body — 余白はトークンだけ・data-* は通し className / style は落とす", async () => {
+  needDist();
+  eq(
+    html(h(ui.PageBody, null, "X")),
+    '<main class="bg-background px-page-inline py-page-block sm:px-page-inline-sm sm:py-page-block-sm">X</main>',
+    "PageBody（既定）"
+  );
+  const forced = html(
+    h(ui.PageBody, { "data-page-full": true, className: "pt-4", style: { paddingTop: 4 } }, "X")
+  );
+  assert(forced.includes('data-page-full="true"'), `data-* が通らない: ${forced}`);
+  assert(!forced.includes("pt-4") && !forced.includes("style="), `余白の逃げ道が開いている: ${forced}`);
+  eq(
+    html(h(ui.PageBody, { width: "flow", fill: true }, "X")),
+    '<main class="bg-background px-page-inline py-page-block sm:px-page-inline-sm sm:py-page-block-sm mx-auto w-full max-w-content-flow-compact sm:max-w-content-flow flex-1">X</main>',
+    "PageBody（width=flow / fill）"
+  );
+});
+
+await check("verify:app-bar — peco の CustomerPageHeader と同じクラス列（左右余白だけトークン）", async () => {
+  needDist();
+  const out = html(h(ui.AppBar, { title: "予約", back: h("a", { className: ui.APP_BAR_BACK_CLASS }) }));
+  eq(
+    out,
+    '<header class="sticky top-0 z-40 border-b border-border bg-card/80 backdrop-blur-lg">' +
+      '<div class="mx-auto flex w-full max-w-content-flow-compact sm:max-w-content-flow items-center gap-3 px-page-inline py-3 sm:px-page-inline-sm">' +
+      '<a class="flex h-8 w-8 items-center justify-center rounded-lg active:bg-accent-bg"></a>' +
+      '<h1 class="min-w-0 flex-1 truncate text-base font-semibold">予約</h1></div></header>',
+    "AppBar"
+  );
+});
+
+await check("verify:centered-notice — 自分の <main> を描き、min-h-app を書かない", async () => {
+  needDist();
+  const out = html(h(ui.CenteredNotice, { title: "完了", description: "本文" }));
+  assert(out.startsWith("<main "), `<main> で始まらない: ${out}`);
+  assert(!out.includes("min-h-app"), "DS が peco 固有の min-h-app を書いている");
+});
+
 console.log(failed === 0 ? "layers: 全検査 PASS" : `layers: ${failed} 件 FAIL`);
 process.exit(failed === 0 ? 0 : 1);

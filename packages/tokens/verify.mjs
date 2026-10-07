@@ -25,11 +25,13 @@ import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import {
   DEFAULT_MODE,
+  LAYOUT_NAMESPACES,
   MODES_DIR,
   TOKENS_SOURCE_GLOB,
   assertModeOverridesSemanticOnly,
   flattenOverrides,
   loadModes,
+  overridableKeys,
   renderModeCss,
 } from "./modes.mjs";
 import { buildFigmaPayload } from "./scripts/figma-payload.mjs";
@@ -78,7 +80,9 @@ function tokenPaths(node, path = [], out = new Set()) {
   }
   return out;
 }
-const defaultKeys = tokenPaths(semanticJson);
+const semanticKeys = tokenPaths(semanticJson);
+/** モードが上書きしてよいキー（build.mjs と同じ関数）。色 + space / size（ADR 0027） */
+const defaultKeys = overridableKeys(semanticJson, dimensionJson);
 
 /** 参照解決（build.mjs と同じ規則）。 */
 function resolve(value) {
@@ -96,7 +100,8 @@ function resolve(value) {
 // 0. 空振り防止 — 検査対象が十分あること
 // ---------------------------------------------------------------------------
 check("verify:fixtures — 検査対象が存在する", () => {
-  ok(defaultKeys.size >= 30, `semantic のトークンが少なすぎる（${defaultKeys.size} 件）`);
+  ok(semanticKeys.size >= 30, `semantic のトークンが少なすぎる（${semanticKeys.size} 件）`);
+  ok(defaultKeys.has("size.content.admin"), "size.content.admin がモードの上書き対象に入っていない");
   ok(defaultKeys.has("accent"), "accent が無い");
   ok(defaultKeys.has("rating.3.fg"), "rating.3.fg が無い（入れ子のパスが取れていない）");
 });
@@ -166,7 +171,7 @@ check("verify:mode-css — 標本モードの CSS が差分だけを持つ", () 
 check("verify:mode-guard — 綴り違いを拒否する", () => {
   throws(
     () => assertModeOverridesSemanticOnly({ name: "x", overrides: { acccent: {} } }, defaultKeys),
-    /既定（color\.semantic\.json）に無いキー/,
+    /既定（color\.semantic\.json \/ dimension\.json の space・size）に無いキー/,
     "綴り違い"
   );
 });
@@ -321,6 +326,129 @@ check("verify:figma-modes — 既定に無いキーを含むモードは payload
     /対応する変数が見つかりません/,
     "既定に無いキー"
   );
+});
+
+// ---------------------------------------------------------------------------
+// 6. ページ余白 / 本文幅（ADR 0027）
+// ---------------------------------------------------------------------------
+// ★ build.mjs は「色以外の名前空間」を列挙して除外する方式なので、名前空間を足すと
+//   **黙って色として出る**（`--color-space-page-block` = `bg-space-page-block` が生える）。
+//   実装中に踏む前提の罠なので、生成物を直接見る。
+
+/** peco が今日描画している値（ADR 0027 の検証条件「値は peco と同一」）。変えるならモードで。 */
+const PECO_LAYOUT_VALUES = {
+  "space.page.block": "1.5rem", // py-6
+  "space.page.block-sm": "2rem", // sm:py-8
+  "space.page.inline": "1rem", // px-4
+  "space.page.inline-sm": "2rem", // sm:px-8
+  "size.content.admin": "1280px", // provider/[slug]/layout.tsx の max-w-[1280px]
+  "size.content.narrow": "42rem", // max-w-2xl
+  "size.content.flow": "56rem", // sm:max-w-4xl
+  "size.content.flow-compact": "32rem", // max-w-lg（flow の sm 未満）
+  "size.content.wide": "64rem", // max-w-5xl
+  "size.content.lp": "72rem", // max-w-6xl
+};
+const layoutTokens = Object.fromEntries(
+  Object.keys(LAYOUT_NAMESPACES).flatMap((namespace) =>
+    Object.entries(flattenOverrides(dimensionJson[namespace] ?? {})).map(([k, v]) => [
+      `${namespace}.${k}`,
+      v.$value,
+    ])
+  )
+);
+
+check("verify:layout-tokens — 値が peco の現行の描画と一致する", () => {
+  eq(
+    Object.keys(layoutTokens).sort().join(","),
+    Object.keys(PECO_LAYOUT_VALUES).sort().join(","),
+    "space / size のトークン一覧"
+  );
+  for (const [key, value] of Object.entries(PECO_LAYOUT_VALUES)) {
+    eq(layoutTokens[key], value, key);
+  }
+});
+
+const readDist = async (rel) => {
+  try {
+    return await readFile(join(HERE, "dist", rel), "utf8");
+  } catch {
+    return null;
+  }
+};
+const themeCss = await readDist("css/theme.css");
+const tokensCss = await readDist("css/tokens.css");
+
+check("verify:layout-tokens — theme では spacing / container として出る（色ではない）", () => {
+  ok(themeCss && tokensCss, "dist が無い。`pnpm build` を先に実行すること");
+  ok(
+    !/--color-(space|size)-/.test(themeCss),
+    "space / size が色として theme に出ている（build.mjs の NON_COLOR_NAMESPACES を確認）"
+  );
+  for (const key of Object.keys(PECO_LAYOUT_VALUES)) {
+    const [namespace, ...rest] = key.split(".");
+    const rootVar = `--${namespace}-${rest.join("-")}`;
+    const themeVar = `--${LAYOUT_NAMESPACES[namespace]}-${rest.join("-")}`;
+    // var() 経由であること（実値だとモードで差し替えても効かない）
+    ok(
+      themeCss.includes(`  ${themeVar}: var(${rootVar});`),
+      `theme.css に ${themeVar}: var(${rootVar}) が無い`
+    );
+    ok(
+      tokensCss.includes(`  ${rootVar}: ${PECO_LAYOUT_VALUES[key]};`),
+      `tokens.css に ${rootVar}: ${PECO_LAYOUT_VALUES[key]} が無い`
+    );
+  }
+});
+
+check("verify:layout-modes — space / size はモードで上書きでき、CSS 変数で出る", () => {
+  const mode = {
+    name: "layout-example",
+    overrides: { "size.content.admin": { $value: "90rem" }, "space.page.block": { $value: "1rem" } },
+  };
+  assertModeOverridesSemanticOnly(mode, defaultKeys);
+  const css = renderModeCss(mode, resolve);
+  ok(css.includes("  --size-content-admin: 90rem;"), `size が出ない:\n${css}`);
+  ok(css.includes("  --space-page-block: 1rem;"), `space が出ない:\n${css}`);
+});
+
+check("verify:layout-modes — text / radius は拒否する（theme に実値で焼き込まれ、効かない）", () => {
+  throws(
+    () =>
+      assertModeOverridesSemanticOnly(
+        { name: "x", overrides: { "radius.control": { $value: "1rem" } } },
+        defaultKeys
+      ),
+    /text \/ radius は theme に実値で焼き込まれる/,
+    "radius の上書き"
+  );
+  throws(
+    () =>
+      assertModeOverridesSemanticOnly(
+        { name: "x", overrides: { "size.content.admn": { $value: "1rem" } } },
+        defaultKeys
+      ),
+    /に無いキー/,
+    "size の綴り違い"
+  );
+});
+
+check("verify:layout-modes — Figma payload では FLOAT の実値（px）が書かれる", () => {
+  const { payload } = buildFigmaPayload({
+    primitivesJson,
+    semanticJson,
+    dimensionJson,
+    modes: [{ name: "layout-example", overrides: { "size.content.admin": { $value: "90rem" } } }],
+    defaultModeName: DEFAULT_MODE,
+    existing: EMPTY,
+  });
+  const created = payload.variableModes.find((m) => m.action === "CREATE");
+  const adminVar = payload.variables.find((v) => v.name === "size/content/admin");
+  ok(adminVar, "size/content/admin の変数が作られていない");
+  eq(adminVar.resolvedType, "FLOAT", "size/content/admin の型");
+  const values = payload.variableModeValues.filter((v) => v.modeId === created.id);
+  eq(values.length, 1, "モードに書かれる値の数");
+  eq(values[0].variableId, adminVar.id, "書かれる変数");
+  eq(values[0].value, 1440, "90rem → 1440");
 });
 
 console.log(`\nトークン検査 ${failed === 0 ? "全件 PASS" : `${failed} 件 FAIL`}`);

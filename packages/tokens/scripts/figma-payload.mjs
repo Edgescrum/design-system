@@ -16,6 +16,7 @@
  * IO は `sync-figma.mjs` に残してある。`verify.mjs` が合成した「既存状態」を
  * 与えてこの関数を直接呼ぶ。
  */
+import { isLayoutKey } from "../modes.mjs";
 
 /** #rrggbb または oklch(L% C H) → Figma の RGBA (0..1) */
 export function cssColorToRgba(value) {
@@ -69,6 +70,13 @@ export function flattenColors(node, path = []) {
   return out;
 }
 
+/** `0.75rem` / `1280px` → Figma の数値（単位なし px）。rem は ×16。 */
+export function dimensionToNumber(value) {
+  const m = /^([\d.]+)(px|rem)$/.exec(value);
+  if (!m) throw new Error(`dimension が px/rem 形式ではありません: ${value}`);
+  return Number(m[1]) * (m[2] === "rem" ? 16 : 1);
+}
+
 /**
  * DTCG ツリーの $type: dimension を FLOAT トークンに展開する。
  * Figma の数値 Variable は単位なし px なので、rem は ×16 で換算する
@@ -80,11 +88,9 @@ export function flattenDimensions(node, path = []) {
     if (key.startsWith("$")) continue;
     if (val && typeof val === "object" && "$value" in val) {
       if (val.$type === "dimension") {
-        const m = /^([\d.]+)(px|rem)$/.exec(val.$value);
-        if (!m) throw new Error(`dimension が px/rem 形式ではありません: ${val.$value}`);
         out.push({
           path: [...path, key],
-          number: Number(m[1]) * (m[2] === "rem" ? 16 : 1),
+          number: dimensionToNumber(val.$value),
           description: val.$description ?? "",
         });
       }
@@ -161,7 +167,7 @@ export function buildFigmaPayload({
     return { id, name, modeId: `temp_mode_${id}`, created: true };
   }
 
-  function planVariables(tokens, collection, primitiveVarIds) {
+  function planVariables(tokens, collection, primitiveVarIds, pathIds = null) {
     const ids = new Map();
     for (const t of tokens) {
       const name = t.path.join("/");
@@ -191,6 +197,8 @@ export function buildFigmaPayload({
             : cssColorToRgba(t.value),
       });
       ids.set(`{color.${t.path.slice(1).join(".")}}`, varId);
+      // dimension（space.page.block 等）はモードがドット区切りのパスで引く
+      pathIds?.set(t.path.join("."), varId);
     }
     return ids;
   }
@@ -242,6 +250,21 @@ export function buildFigmaPayload({
         });
       }
       for (const [key, token] of Object.entries(mode.overrides)) {
+        // ページ余白 / 本文幅（ADR 0027）は FLOAT 変数。値は実値（rem/px → px の数値）
+        if (isLayoutKey(key)) {
+          const varId = dimensionVarIds.get(key);
+          if (!varId) {
+            throw new Error(
+              `モード "${mode.name}" の ${key} に対応する変数が見つかりません（索引キー: ${key}）`
+            );
+          }
+          payload.variableModeValues.push({
+            variableId: varId,
+            modeId,
+            value: dimensionToNumber(token.$value),
+          });
+          continue;
+        }
         const ref = `{color.${key}}`;
         const varId = semanticVarIds.get(ref);
         if (!varId) {
@@ -271,8 +294,9 @@ export function buildFigmaPayload({
   const semCol = planCollection("Semantic", false);
   const primitiveVarIds = planVariables(primitives, primCol);
   const semanticVarIds = planVariables(semantics, semCol, primitiveVarIds);
-  // 役割トークン（radius/* text/*）は Semantic コレクションの FLOAT 変数
-  planVariables(dimensions, semCol);
+  // 役割トークン（radius/* text/* と ADR 0027 の space/* size/*）は Semantic コレクションの FLOAT 変数
+  const dimensionVarIds = new Map();
+  planVariables(dimensions, semCol, undefined, dimensionVarIds);
 
   planDefaultModeName(primCol);
   planDefaultModeName(semCol);

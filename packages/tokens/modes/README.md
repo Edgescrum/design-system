@@ -29,6 +29,11 @@ PeCo の既定が壊れる、という形でしか現れない。`verify.mjs` �
    ```
 
    - キーは `color.semantic.json` と同じ綴り（入れ子は `rating.3.fg` のようにドットでも可）
+   - **ページ余白 / 本文幅**（`dimension.json` の `space.*` / `size.*`・ADR 0027）も上書きできる。
+     値は参照ではなく実値で書く（`{ "size": { "content": { "admin": { "$value": "90rem" } } } }`）
+   - ★ **`text.*` / `radius.*` は上書きできない**（ビルドが落ちる）。theme に実値で焼き込まれて
+     いるので、モードで変数を出してもどのユーティリティも読まず、**上書きできたように見えて
+     何も変わらない**。理由の詳細は `modes.mjs` の `LAYOUT_NAMESPACES`
    - **既定に無いキーはビルドが落ちる**（綴り違いが黙って死なないように）
    - **`color.*`（primitives）は書けない** — ADR 0026 Decision 3 が禁止している
 

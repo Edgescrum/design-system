@@ -21,5 +21,65 @@
       "$value": "1rem",
       "$description": "カード・モーダルなどの面（= rounded-2xl）"
     }
+  },
+  "space": {
+    "$description": "ページ本文の余白（ADR 0027 Decision 1 / §9-5 Q6）。持ち主は ds-core の PageBody だけで、ページは書かない。★ トークンはメディアクエリを持てないので、ブレークポイントごとに別トークンにしている。接尾辞 `-sm` は「Tailwind の sm（640px）以上で使う値」の意味で、無印が sm 未満の値。2 本の組み合わせ方（`py-page-block sm:py-page-block-sm`）は PageBody が持つので、プロダクトが組み直さないこと。値は peco の `px-4 py-6 sm:px-8 sm:py-8`（30 ファイルが完全一致でコピーしていた綴り）と同じ。",
+    "page": {
+      "block": {
+        "$type": "dimension",
+        "$value": "1.5rem",
+        "$description": "本文の上下余白・sm 未満（= py-6）"
+      },
+      "block-sm": {
+        "$type": "dimension",
+        "$value": "2rem",
+        "$description": "本文の上下余白・sm 以上（= sm:py-8）"
+      },
+      "inline": {
+        "$type": "dimension",
+        "$value": "1rem",
+        "$description": "本文の左右余白・sm 未満（= px-4）。AppBar の内側の左右余白も同じ値を使う（ヘッダーと本文の左端を揃えるため）"
+      },
+      "inline-sm": {
+        "$type": "dimension",
+        "$value": "2rem",
+        "$description": "本文の左右余白・sm 以上（= sm:px-8）"
+      }
+    }
+  },
+  "size": {
+    "$description": "本文の最大幅（ADR 0027 Decision 1 / §9-5 の置き場所の表）。持ち主は ds-core の PageBody / AppBar の `width` で、ページは `max-w-*` を書かない。値は peco の現行の描画と同一（admin = provider/[slug]/layout.tsx の max-w-[1280px]、他は public-page-width.ts の PUBLIC_WIDTH_CLASS。Tailwind 標準の段を rem でそのまま収載）。★ CONTRIBUTING の判定表「構造は共通・値は個別」の代表例なので、プロダクトの値はモードで差し替える。storefront（clamp(64rem,80vw,96rem)）は px/rem で表せず Figma の数値 Variable にもならないので収載しない（店舗トップの HERO / フッター専用で、本文の幅ではない）。",
+    "content": {
+      "admin": {
+        "$type": "dimension",
+        "$value": "1280px",
+        "$description": "事業主の管理画面（AdminShell）。peco は `max-w-[1280px]` と px で書いているので px のまま収載する"
+      },
+      "narrow": {
+        "$type": "dimension",
+        "$value": "42rem",
+        "$description": "672px。文章を読ませる・設定を並べる画面（= max-w-2xl）"
+      },
+      "flow": {
+        "$type": "dimension",
+        "$value": "56rem",
+        "$description": "896px。予約・回答フローなど 1 列の集中画面の sm 以上の幅（= sm:max-w-4xl）"
+      },
+      "flow-compact": {
+        "$type": "dimension",
+        "$value": "32rem",
+        "$description": "512px。flow の sm 未満の上限（= max-w-lg）。横向きの端末・折りたたみで 1 行が伸びすぎないための値で、flow と必ず対で使う（PageBody / AppBar の width=\"flow\" が組み合わせる）"
+      },
+      "wide": {
+        "$type": "dimension",
+        "$value": "64rem",
+        "$description": "1024px。一覧・カードの並び（= max-w-5xl）"
+      },
+      "lp": {
+        "$type": "dimension",
+        "$value": "72rem",
+        "$description": "1152px。ランディングページ（= max-w-6xl）"
+      }
+    }
   }
 }
