@@ -83,6 +83,51 @@ export const TOKENS_SOURCE_GLOB = "tokens/**/*.json";
 export const MODES_DIR = join(HERE, "modes");
 
 /**
+ * **モードで上書きできる dimension の名前空間**と、Tailwind v4 の theme 名前空間の対応
+ * （ADR 0027 Decision 1。`dimension.json` の `space.*` / `size.*`）。
+ *
+ * | トークン | :root の変数 | theme の変数 | 使えるユーティリティ |
+ * |---|---|---|---|
+ * | `space.page.block` | `--space-page-block` | `--spacing-page-block` | `py-page-block` / `pt-…` / `p-…` |
+ * | `size.content.admin` | `--size-content-admin` | `--container-content-admin` | `max-w-content-admin` |
+ *
+ * theme 側は `--spacing-X: var(--space-X)` と **var() 経由**で出す（色の
+ * `--color-X: var(--X)` と同じ形）。`@theme inline` はこの `var(--space-X)` を
+ * ユーティリティにそのまま埋め込むので、**`[data-ds-mode]` で :root の変数を
+ * 差し替えれば実行時に効く。**
+ *
+ * ★ **`text.*` / `radius.*` はここに入れない（= モードで上書きできない）。**
+ *   この 2 つは theme に**実値**（`--radius-control: 0.75rem`）で出ており、
+ *   `@theme inline` がその実値をユーティリティに焼き込む。モードで :root に
+ *   `--radius-control` を出しても**どのユーティリティも読まない**ので、
+ *   上書きできたように見えて何も変わらない。モード対象にしたくなったら、
+ *   先に theme の出し方を var() 経由に変えること（既存の生成物が変わる = 別 PR）。
+ */
+export const LAYOUT_NAMESPACES = { space: "spacing", size: "container" };
+
+/**
+ * モードが上書きしてよいキーの集合（**build・verify・Figma payload が同じ 1 つを使う**）。
+ * semantic の色すべて + `dimension.json` のうち `LAYOUT_NAMESPACES` の配下。
+ *
+ * @param {object} semanticJson tokens/color.semantic.json
+ * @param {object} dimensionJson tokens/dimension.json
+ * @returns {Set<string>} ドット区切りのトークンパス
+ */
+export function overridableKeys(semanticJson, dimensionJson) {
+  const keys = new Set(Object.keys(flattenOverrides(semanticJson)));
+  for (const namespace of Object.keys(LAYOUT_NAMESPACES)) {
+    if (!dimensionJson[namespace]) continue;
+    for (const key of Object.keys(flattenOverrides(dimensionJson[namespace]))) {
+      keys.add(`${namespace}.${key}`);
+    }
+  }
+  return keys;
+}
+
+/** `space.page.block` のようなキーが dimension（レイアウト）側のものか。 */
+export const isLayoutKey = (key) => Object.hasOwn(LAYOUT_NAMESPACES, key.split(".")[0]);
+
+/**
  * `modes/*.json` を読む。
  *
  * @param {string} [dir] 省略時は packages/tokens/modes
@@ -123,17 +168,19 @@ export function flattenOverrides(node, path = [], out = {}) {
 }
 
 /**
- * **モードが上書きできるのは既定に実在する semantic のキーだけ**であることを検査する。
+ * **モードが上書きできるのは既定に実在する semantic のキー（色 + space / size）だけ**であることを検査する。
  *
- * 2 つの事故を止める:
+ * 3 つの事故を止める:
  *
  * 1. **綴り間違いが黙って死ぬ** — `acccent` と書いても CSS 変数が 1 本増えるだけで、
  *    誰も使わないので気づけない。既定に無いキーは拒否する
  * 2. **primitives にモードが生える** — ADR 0026 Decision 3 が明示的に禁止している。
  *    `color.*` 名前空間のキーは拒否する
+ * 3. **効かない上書き** — `text.*` / `radius.*` は theme に実値で焼き込まれるので、
+ *    モードで変えても画面は変わらない（`LAYOUT_NAMESPACES` の注記）。拒否する
  *
  * @param {{name: string, overrides: object}} mode
- * @param {Set<string>} defaultKeys `color.semantic.json` に実在するトークンパス
+ * @param {Set<string>} defaultKeys `overridableKeys()` の結果（semantic の色 + space / size）
  */
 export function assertModeOverridesSemanticOnly(mode, defaultKeys) {
   const problems = [];
@@ -143,10 +190,15 @@ export function assertModeOverridesSemanticOnly(mode, defaultKeys) {
         `  ${key} — primitives はモードを持たない（ADR 0026 Decision 3）。` +
           `semantic の役割トークン側を上書きすること`
       );
+    } else if (key.startsWith("text.") || key.startsWith("radius.")) {
+      problems.push(
+        `  ${key} — text / radius は theme に実値で焼き込まれるので、モードで上書きしても` +
+          `どのユーティリティにも効かない（modes.mjs の LAYOUT_NAMESPACES の注記）`
+      );
     } else if (!defaultKeys.has(key)) {
       const near = [...defaultKeys].filter((k) => k.startsWith(key.split(".")[0])).slice(0, 3);
       problems.push(
-        `  ${key} — 既定（color.semantic.json）に無いキー。綴り違いではないか` +
+        `  ${key} — 既定（color.semantic.json / dimension.json の space・size）に無いキー。綴り違いではないか` +
           (near.length ? `（近いもの: ${near.join(" / ")}）` : "")
       );
     }

@@ -23,8 +23,10 @@
  * 責務ではない。アプリ側は `tabItemClass()` + `TabUnderline` を使って
  * 自前の `TabLink` を組むこと (peco では `src/components/Tabs.tsx` に残る)。
  *
- * `PageTabBar` はページ本文と同じ横 padding (`px-4 sm:px-8`) を内包するので、
- * 最左タブの左端が見出し・カードの左端と揃う (#540 round 6 の調整をそのまま踏襲)。
+ * `PageTabBar` は (既定の `placement="above-body"` では) ページ本文と同じ横 padding
+ * (`px-4 sm:px-8`) を内包するので、最左タブの左端が見出し・カードの左端と揃う
+ * (#540 round 6 の調整をそのまま踏襲)。`PageBody` の中に置く `placement="in-body"` は
+ * `PageTabBar` 本体の docstring を参照。
  * 本文の中に埋め込む場合 (すでに padding 済みの領域) は `TabBar` / `TabList` を使う。
  *
  * ## ARIA: なぜ入れ物が 2 種類あるのか
@@ -104,9 +106,56 @@ export function TabBar({ children }: { children: ReactNode }) {
 }
 
 /**
- * ページ最上部に置くリンクのタブバー。本文と同じ横 padding を内包する。
+ * ページ最上部に置くリンクのタブバー。
+ *
+ * ## `placement` — 余白をどちらが持つか（ADR 0027 Decision 6）
+ *
+ * | placement | 置き場所 | 上 / 左右の余白 | 下の余白 |
+ * |---|---|---|---|
+ * | `"above-body"`（既定） | `<main>` の**外**（兄） | **自分で持つ**（`px-4 pt-6 sm:px-8 sm:pt-8`） | 持たない → ページが `pt-4 sm:pt-6` で代償する |
+ * | `"in-body"` | `PageBody` の**中**（先頭） | `PageBody` が持つ（`space.page.*`） | **自分で持つ**（`pb-4 sm:pb-6`） |
+ *
+ * 既定の `"above-body"` は従来どおりで、**DOM も見た目も 1 バイトも変わらない**
+ * （peco の `existing-plan-nav-dom.baseline.json` がバイト単位で固定している）。
+ *
+ * ### なぜ `"in-body"` が要るか
+ *
+ * `"above-body"` では**帯（タブ）を描く側が自分の下の余白を持っていない**ので、
+ * 下に続く本文の上余白（24 / 32px）が広すぎ、ページが `pt-4 sm:pt-6` を書いて詰めている。
+ * この代償は**タブが消えても残る**（peco の `profile/shift` は `ProfileTabs` が `null` を
+ * 返すのに `pt-4` だけが残っていた）し、**タブを一度も持たないページにも綴りだけコピーされる**
+ * （`invoices/payment-methods`）。ADR 0027 の裁定は「本文の上余白は `space.page.*` の 1 値だけ。
+ * 帯を足す部品は自分の下の余白も持つ（帯が消えたら代償も一緒に消える）」。
+ *
+ * `"in-body"` にすると縦の並びは
+ * `PageBody の上余白（24 / 32）→ タブ → タブの下余白（16 / 24）→ 本文` になり、
+ * **今日の `"above-body"` + ページの `pt-4 sm:pt-6` と画素単位で同じ**になる
+ * （タブの上: 24 / 32、タブの下: 16 / 24）。違うのは、**ページが何も書かなくてよい**こと。
+ *
+ * ★ 下の余白を margin ではなく **padding** で持つのは、margin だと本文の先頭要素の
+ *   `mt-*` と**相殺**（大きい方だけが残る）して、ページの `pt-4` が担っていた「足し算」と
+ *   値が変わるから。padding は相殺しない。
+ *
+ * ★ `"in-body"` は**左右の余白も `PageBody` に任せる**ので、`PageBody` の外に置くと
+ *   タブの左端が本文より 16 / 32px 左にはみ出る。外に置くなら既定の `"above-body"` を使う。
+ *
+ * peco は ADR 0027 の 6b（AdminShell が `PageBody` を layout に引き上げる段）でこちらへ切り替える。
  */
-export function PageTabBar({ children }: { children: ReactNode }) {
+export function PageTabBar({
+  children,
+  placement = "above-body",
+}: {
+  children: ReactNode;
+  /** 余白をどちらが持つか。既定 `"above-body"`（従来どおり）。上の表を参照 */
+  placement?: "above-body" | "in-body";
+}) {
+  if (placement === "in-body") {
+    return (
+      <div className="pb-4 sm:pb-6">
+        <TabBar>{children}</TabBar>
+      </div>
+    );
+  }
   return (
     <div className="bg-background px-4 pt-6 sm:px-8 sm:pt-8">
       <TabBar>{children}</TabBar>

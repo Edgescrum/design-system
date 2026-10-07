@@ -91,7 +91,7 @@ Code Connect のテンプレート 41 本が `// source=packages/ui/src/...` を
 pnpm build       # トークンと部品のビルド
 pnpm typecheck
 pnpm lint        # 層の向き（eslint.config.mjs）
-pnpm verify      # トークンのモード機構 13 本 + 層の検査 10 本
+pnpm verify      # トークン 18 本（モード機構・ページ余白 / 本文幅）+ 層の検査 10 本 + ページの骨格 5 本
 ```
 
 `pnpm verify` は **ESLint を API から呼んで標本コードを食わせる**。
