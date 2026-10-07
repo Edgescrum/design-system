@@ -15,3 +15,9 @@
 ★ 新しいクラス（`py-page-block` / `max-w-content-*` など）は `@edgescrum/ds-foundation` の
 この版の `theme.css` が定義する。**ds-foundation を上げずに ds-core だけ上げると、余白と幅が黙って消える**
 （Tailwind は未知のクラスを無視し、型エラーもビルドエラーも出ない）。
+
+★ `@edgescrum/ds-foundation >=0.6.0` を **peerDependency** にした。`PageBody` / `AppBar` / `CenteredNotice` の
+`py-page-block` / `max-w-content-*` などは ds-foundation の `theme.css` が定義するユーティリティで、
+ds-core だけを上げて ds-foundation を据え置くと**クラスが生成されず余白と幅が黙って消える**（ビルドも型も緑のまま）。
+範囲を `^` ではなく `>=` にしたのは、ds-foundation の minor のたびに changesets が ds-core を major に上げないため
+（`onlyUpdatePeerDependentsWhenOutOfRange` と同じ理由）。
