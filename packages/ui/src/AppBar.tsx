@@ -17,6 +17,23 @@ import { CONTENT_WIDTH_CLASS, type ContentWidth } from "./content-width";
 export const APP_BAR_BACK_CLASS =
   "flex h-8 w-8 items-center justify-center rounded-lg active:bg-accent-bg";
 
+/** `AppBar` の画面名の最大行数。 */
+export type AppBarTitleLines = 1 | 2;
+
+/**
+ * 画面名 `<h1>` のクラス（行数ごと）。
+ *
+ * - `1` は従来の綴りのまま（**既定の DOM は 1 バイトも変わらない**。`verify.mjs` が描画して比べる）
+ * - `2` は peco の #948 ② の旧 `<h1 className="line-clamp-2 min-w-0 flex-1 text-base font-semibold
+ *   leading-tight">` と同じクラスの集合（並びだけ `1` に揃えた）。`line-clamp-2` が
+ *   `display: -webkit-box` にするので、flex item のまま 2 行で折り返す。`truncate` を外すので
+ *   `whitespace-normal` の打ち消しは要らない
+ */
+const TITLE_CLASS: Record<AppBarTitleLines, string> = {
+  1: "min-w-0 flex-1 truncate text-base font-semibold",
+  2: "min-w-0 flex-1 line-clamp-2 text-base font-semibold leading-tight",
+};
+
 type AppBarCommon = {
   /** 左端。戻るリンクなど（`APP_BAR_BACK_CLASS` を付けた完成形を渡す） */
   back?: ReactNode;
@@ -38,8 +55,21 @@ type AppBarCommon = {
 export type AppBarProps = AppBarCommon &
   (
     | {
-        /** 画面名。`<h1>` で描く（残りの幅を埋め、溢れたら省略記号） */
+        /** 画面名。`<h1>` で描く（残りの幅を埋め、溢れたら `titleLines` に従って切る） */
         title?: ReactNode;
+        /**
+         * 画面名の最大行数。既定 `1`（1 行 + 省略記号）。
+         *
+         * `2` は**最大 2 行で折り返し、溢れたら 2 行目の末尾で省略**する（行の高さは `leading-tight`
+         * = 20px なので、1 行のとき 20px・2 行のとき 40px）。事業主画面のモバイルヘッダー用
+         * （peco #948 ②）—— モバイルでは本文の `<h1>` が `hidden sm:block` のことが多く、
+         * **このヘッダーが唯一の画面名表示**になるので「マイプロフ…」と切れると現在地が分からなくなる。
+         *
+         * ★ `title` に `<span className="line-clamp-2 …">` を渡して 2 行にしないこと（peco #2572）。
+         *   `<h1>` の `truncate` の `white-space: nowrap` が継承されるので打ち消しが要り、
+         *   部品の外から仕様を上書きする形になる。行数はこの prop で決める。
+         */
+        titleLines?: AppBarTitleLines;
         logo?: never;
       }
     | {
@@ -49,6 +79,7 @@ export type AppBarProps = AppBarCommon &
          */
         logo: ReactNode;
         title?: never;
+        titleLines?: never;
       }
   );
 
@@ -70,7 +101,15 @@ export type AppBarProps = AppBarCommon &
  * ★ **背景が半透明（`bg-card/80` + `backdrop-blur-lg`）なので、下にスクロールした本文が
  *   透けて見えるのは仕様。** 不透明にしたくなっても、ここではなく Figma で裁定してから変えること。
  */
-export function AppBar({ back, title, logo, right, width = "flow", className }: AppBarProps) {
+export function AppBar({
+  back,
+  title,
+  titleLines = 1,
+  logo,
+  right,
+  width = "flow",
+  className,
+}: AppBarProps) {
   return (
     <header
       className={cx(
@@ -86,7 +125,7 @@ export function AppBar({ back, title, logo, right, width = "flow", className }: 
         )}
       >
         {back}
-        {title ? <h1 className="min-w-0 flex-1 truncate text-base font-semibold">{title}</h1> : null}
+        {title ? <h1 className={TITLE_CLASS[titleLines]}>{title}</h1> : null}
         {/* ロゴは h1 と同じく残りの幅を埋める（右スロットを右端に押すため） */}
         {logo ? <div className="flex min-w-0 flex-1 items-center">{logo}</div> : null}
         {right}
