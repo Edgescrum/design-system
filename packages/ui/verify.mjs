@@ -236,6 +236,32 @@ await check("verify:app-bar — peco の CustomerPageHeader と同じクラス�
   );
 });
 
+await check("verify:app-bar — titleLines 既定（未指定）と 1 は従来と 1 バイトも変わらない", async () => {
+  needDist();
+  // 上の検査と同じ期待値を、titleLines の追加後も既定経路が通ることとして固定する（peco #2572）
+  const expected =
+    '<header class="sticky top-0 z-40 border-b border-border bg-card/80 backdrop-blur-lg">' +
+    '<div class="mx-auto flex w-full max-w-content-flow-compact sm:max-w-content-flow items-center gap-3 px-page-inline py-3 sm:px-page-inline-sm">' +
+    '<h1 class="min-w-0 flex-1 truncate text-base font-semibold">予約</h1></div></header>';
+  eq(html(h(ui.AppBar, { title: "予約" })), expected, "AppBar（titleLines 未指定）");
+  eq(html(h(ui.AppBar, { title: "予約", titleLines: 1 })), expected, "AppBar（titleLines=1）");
+});
+
+await check("verify:app-bar — titleLines=2 は h1 自身が line-clamp-2 + leading-tight（truncate なし・入れ子なし）", async () => {
+  needDist();
+  const out = html(h(ui.AppBar, { title: "完了メッセージを編集", titleLines: 2 }));
+  // peco #948 ② の旧 <h1 className="line-clamp-2 min-w-0 flex-1 text-base font-semibold leading-tight"> と同じクラスの集合
+  assert(
+    out.includes('<h1 class="min-w-0 flex-1 line-clamp-2 text-base font-semibold leading-tight">完了メッセージを編集</h1>'),
+    `2 行の h1 のクラスが違う: ${out}`
+  );
+  assert(!out.includes("truncate"), `2 行なのに truncate が残っている: ${out}`);
+  assert(!out.includes("whitespace-"), `whitespace の打ち消しは要らないはず: ${out}`);
+  // h1 の外側（header / 内側の div）は 1 行のときと同じ
+  const one = html(h(ui.AppBar, { title: "完了メッセージを編集" }));
+  eq(out.replace(/<h1 [^>]*>/, ""), one.replace(/<h1 [^>]*>/, ""), "AppBar（h1 以外の差分）");
+});
+
 await check("verify:centered-notice — 自分の <main> を描き、min-h-app を書かない", async () => {
   needDist();
   const out = html(h(ui.CenteredNotice, { title: "完了", description: "本文" }));

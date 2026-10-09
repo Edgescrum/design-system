@@ -39,6 +39,7 @@ const meta = {
   },
   argTypes: {
     width: { control: "inline-radio", options: ["none", "admin", "narrow", "flow", "wide", "lp"] },
+    titleLines: { control: "inline-radio", options: [1, 2] },
   },
   parameters: { layout: "fullscreen" },
 } satisfies Meta<typeof AppBar>;
@@ -70,4 +71,28 @@ export const WithLogo: Story = {
 /** 戻る先が無い起点の画面（戻る矢印なし）。 */
 export const TitleOnly: Story = {
   args: { back: undefined, title: "アンケート" },
+};
+
+/**
+ * 画面名を最大 2 行で折り返す形（`titleLines={2}`）。事業主画面のモバイルヘッダー用（peco #948 ②）。
+ * モバイルでは本文の `<h1>` が隠れていることが多く、このヘッダーが唯一の画面名表示になるので、
+ * 1 行で「マイプロフ…」と切らずに 2 行まで見せる。2 行を超えたら 2 行目の末尾で省略する。
+ *
+ * 1 行に収まる長さなら高さは既定（`titleLines={1}`）と同じ（行の高さ 20px）。
+ */
+export const TwoLineTitle: Story = {
+  args: {
+    title: "完了メッセージを編集・事前ヒアリングを編集・カレンダー連携の設定・通知の受け取り方",
+    titleLines: 2,
+    width: "admin",
+    right: <span className="text-xs text-muted">店舗チップ</span>,
+  },
+  // モバイル幅（375px）で見せる。広い画面では 1 行に収まってしまい、折り返しが見えない
+  decorators: [
+    (Story) => (
+      <div style={{ width: 375 }}>
+        <Story />
+      </div>
+    ),
+  ],
 };

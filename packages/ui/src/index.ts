@@ -21,7 +21,7 @@ export { PageContainer } from "./PageContainer";
 export { PageBody } from "./PageBody";
 export type { PageBodyProps, DataAttributes } from "./PageBody";
 export { AppBar, APP_BAR_BACK_CLASS } from "./AppBar";
-export type { AppBarProps } from "./AppBar";
+export type { AppBarProps, AppBarTitleLines } from "./AppBar";
 export { CenteredNotice } from "./CenteredNotice";
 export type { CenteredNoticeProps } from "./CenteredNotice";
 export { CONTENT_WIDTH_CLASS } from "./content-width";
