@@ -269,5 +269,16 @@ await check("verify:centered-notice — 自分の <main> を描き、min-h-app �
   assert(!out.includes("min-h-app"), "DS が peco 固有の min-h-app を書いている");
 });
 
+await check("verify:centered-notice — content 未指定なら出力が変わらない・指定時は description と note の間に描く（#43）", async () => {
+  needDist();
+  const base = { title: "完了", description: "本文", note: "補足", actions: h("a", null, "戻る") };
+  const without = html(h(ui.CenteredNotice, base));
+  const withUndef = html(h(ui.CenteredNotice, { ...base, content: undefined }));
+  assert(without === withUndef, "content: undefined で出力が変わった");
+  const out = html(h(ui.CenteredNotice, { ...base, content: h("section", { id: "slot" }, "比較") }));
+  const iDesc = out.indexOf("本文"), iSlot = out.indexOf('id="slot"'), iNote = out.indexOf("補足"), iAct = out.indexOf("戻る");
+  assert(iDesc >= 0 && iSlot > iDesc && iNote > iSlot && iAct > iNote, `順序が description → content → note → actions でない: ${out}`);
+});
+
 console.log(failed === 0 ? "layers: 全検査 PASS" : `layers: ${failed} 件 FAIL`);
 process.exit(failed === 0 ? 0 : 1);

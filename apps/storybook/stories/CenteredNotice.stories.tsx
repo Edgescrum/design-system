@@ -59,3 +59,34 @@ export const WithIconAndActions: Story = {
     ),
   },
 };
+
+/** 本文の下に任意の中身を差し込む（#43）。peco #2605 の「2 店舗目の案内」。中身の左揃えは渡す側で決める。 */
+export const WithContent: Story = {
+  args: {
+    title: "すでに「ネイルサロン Lulu」を登録済みです",
+    description: "2店舗目は、チームプランで同じアカウントに追加できます。",
+    note: undefined,
+    content: (
+      <div className="flex flex-col gap-2 text-left">
+        <div className="rounded-xl bg-background p-3.5 text-sm ring-1 ring-border">
+          <p className="text-xs text-muted">現在のプラン</p>
+          <p className="font-bold">スタンダード ¥980/月・1店舗</p>
+        </div>
+        <div className="rounded-xl bg-card p-4 text-sm ring-2 ring-accent">
+          <p className="font-bold">チームプラン</p>
+          <p>¥3,980/月（1店舗込み）</p>
+        </div>
+      </div>
+    ),
+    actions: (
+      <>
+        <a href="#" className={buttonClass({ variant: "primary", size: "md" })}>
+          管理画面へ
+        </a>
+        <a href="#" className={buttonClass({ variant: "secondary", size: "md" })}>
+          チームプランにアップグレード
+        </a>
+      </>
+    ),
+  },
+};

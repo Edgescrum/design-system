@@ -9,6 +9,7 @@ const description = instance.getString("description");
 const note = instance.getString("note");
 const showNote = instance.getBoolean("showNote");
 const showActions = instance.getBoolean("showActions");
+const showContent = instance.getBoolean("showContent");
 
 export default {
   // ★ 自分の <main> を描く。ページ側でさらに <main> で包まないこと。
@@ -17,6 +18,7 @@ export default {
   className="min-h-app"
   title="${title}"
   description="${description}"
+  ${showContent ? figma.code`content={/* 本文の下の中身（左揃えは渡す側で text-left） */}` : ""}
   ${showNote ? figma.code`note="${note}"` : ""}
   ${showActions ? figma.code`actions={<Button variant="primary" size="md">…</Button>}` : ""}
 />`,
