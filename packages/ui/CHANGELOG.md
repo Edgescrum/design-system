@@ -1,5 +1,11 @@
 # @edgescrum/ds-core（旧 @edgescrum/peco-ui）
 
+## 0.8.0
+
+### Minor Changes
+
+- 794f129: CenteredNotice に `content` スロットを追加（#43）。description の直後・note / actions の前に任意の中身を描く。未指定時の出力は従来と同一。
+
 ## 0.7.0
 
 ### Minor Changes
