@@ -9,6 +9,14 @@ export type CenteredNoticeProps = {
   description?: ReactNode;
   /** 本文の `<p>` に付ける `data-testid`（文言を検査するテストが要る画面向け） */
   descriptionTestId?: string;
+  /**
+   * 本文の下に差し込む任意の中身（#43）。description の直後・note / actions の前に描く。
+   * 例: peco #2605 の「2 店舗目の案内」のプラン比較カード。
+   *
+   * ★ カードは `text-center` なので、左揃えにしたい中身は渡す側で `text-left` を付けること
+   *   （DS は中身の揃えを決めない）。未指定なら何も描かない（既存の見た目は 1px も変わらない）。
+   */
+  content?: ReactNode;
   /** 補足（小さい文字）。例:「このページは閉じて構いません。」・エラーコード */
   note?: ReactNode;
   /** 見出しの上のアイコン。寸法・色込みの完成形を渡す */
@@ -50,6 +58,7 @@ export function CenteredNotice({
   title,
   description,
   descriptionTestId,
+  content,
   note,
   icon,
   logo,
@@ -74,6 +83,7 @@ export function CenteredNotice({
             {description}
           </p>
         ) : null}
+        {content ? <div className="mt-4">{content}</div> : null}
         {note ? <p className="mt-4 text-xs text-muted">{note}</p> : null}
         {actions ? <div className="mt-6 flex flex-col gap-2">{actions}</div> : null}
       </div>
