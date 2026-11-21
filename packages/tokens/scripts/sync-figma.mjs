@@ -60,6 +60,7 @@ const { payload, stats } = buildFigmaPayload({
   primitivesJson: await readJson("color.primitives.json"),
   semanticJson: await readJson("color.semantic.json"),
   dimensionJson: await readJson("dimension.json"),
+  typographyJson: await readJson("typography.json"),
   modes: await loadModes(),
   defaultModeName: DEFAULT_MODE,
   existing: existing.meta,

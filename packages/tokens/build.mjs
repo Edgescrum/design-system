@@ -10,7 +10,9 @@
  *                              アプリコードからの直接使用は禁止）
  *   dist/css/theme.css       — Tailwind v4 の @theme inline ブロック
  *                              （--color-* / --font-* / --text-* / --radius-* と、
- *                              ADR 0027 の --spacing-page-* / --container-content-*）
+ *                              ADR 0027 の --spacing-page-* / --container-content-*、
+ *                              §10-8 の --text-role-* / --font-weight-* / --spacing-{inset,related,group}）
+ *   DESIGN.md の先頭 YAML    — DTCG からの写し（ADR-0032）。本文は手書きが正で触らない。CI では書き込まない
  *   dist/json/tokens.json    — 解決済みフラット JSON（機械用）
  *   dist/css/modes/<名>.css  — セマンティックのモード上書き（ADR 0026 Decision 3）。
  *                              modes/*.json（**tokens/ の外**）が無ければ 1 ファイルも作らない
@@ -35,6 +37,7 @@ import {
   overridableKeys,
   renderModeCss,
 } from "./modes.mjs";
+import { syncFoundationDesignMd } from "./scripts/design-md.mjs";
 
 /** 名前空間の判定。tokens/*.json のトップレベルキーが正 */
 const ns = (token) => token.path[0];
@@ -67,13 +70,18 @@ const sd = new StyleDictionary({
         for (const token of dictionary.allTokens) {
           if (isSemanticColor(token)) {
             lines.push(`  --color-${token.name}: var(--${token.name});`);
+          } else if (ns(token) === "font" && token.$type === "fontWeight") {
+            // font.weight.emphasis → --font-weight-emphasis: 600（Tailwind v4 の font-emphasis）
+            lines.push(`  --font-weight-${token.path.slice(2).join("-")}: ${token.$value};`);
           } else if (ns(token) === "font") {
             const families = token.original.$value
               .map((f) => (f.includes(" ") ? `"${f}"` : f))
               .join(", ");
             lines.push(`  --font-${token.path[1]}: ${families};`);
           } else if (ns(token) === "text") {
-            lines.push(`  --text-${token.path[1]}: ${token.$value};`);
+            // text.2xs → --text-2xs / text.role.heading → --text-role-heading（§10-8 の 5 段）。
+            // 以前は path[1] だけを見ていたので、入れ子の text.role.* は全部 --text-role に潰れた
+            lines.push(`  --text-${token.path.slice(1).join("-")}: ${token.$value};`);
           } else if (ns(token) === "radius") {
             lines.push(`  --radius-${token.path[1]}: ${token.$value};`);
           } else if (isLayout(token)) {
@@ -171,5 +179,13 @@ if (modes.length) {
   }
   console.log(`modes: ${modes.map((m) => m.name).join(", ")}`);
 }
+
+// ---------------------------------------------------------------------------
+// DESIGN.md の先頭 YAML（ADR-0032 / peco 25_design-system.md §10-3）
+// ---------------------------------------------------------------------------
+// 本文は手書きが正。先頭 YAML だけを DTCG から書き込む。
+// ★ CI では書き込まない。書き込むと「手で触った YAML」を build が上書きしてから
+//   verify が比べることになり、検査が必ず緑になる（verify:design-md-frontmatter が見る）。
+await syncFoundationDesignMd({ write: !process.env.CI });
 
 console.log("tokens built.");

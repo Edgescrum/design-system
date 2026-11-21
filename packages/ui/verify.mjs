@@ -23,7 +23,15 @@ import { readFile, readdir } from "node:fs/promises";
 import { dirname, join, relative } from "node:path";
 import { fileURLToPath } from "node:url";
 import { ESLint } from "eslint";
+import { execFileSync } from "node:child_process";
 import { AUDIENCES, classifySrcFile, localDir } from "../../layers.mjs";
+import {
+  checkRefs,
+  expectedFrontmatter,
+  findContractFiles,
+  parseContract,
+  splitDesignMd,
+} from "../tokens/scripts/design-md.mjs";
 
 const HERE = dirname(fileURLToPath(import.meta.url));
 const REPO = join(HERE, "..", "..");
@@ -278,6 +286,158 @@ await check("verify:centered-notice — content 未指定なら出力が変わ�
   const out = html(h(ui.CenteredNotice, { ...base, content: h("section", { id: "slot" }, "比較") }));
   const iDesc = out.indexOf("本文"), iSlot = out.indexOf('id="slot"'), iNote = out.indexOf("補足"), iAct = out.indexOf("戻る");
   assert(iDesc >= 0 && iSlot > iDesc && iNote > iSlot && iAct > iNote, `順序が description → content → note → actions でない: ${out}`);
+});
+
+// ── 5. 使い方の約束（ADR-0032 / peco 25_design-system.md §10-3〜§10-5） ─────────────
+console.log("usage contracts (ADR-0032 / §10)");
+
+const DESIGN_MD = join(HERE, "DESIGN.md");
+const BASELINE = join(HERE, "design-md-baseline.json");
+const BASELINE_REL = relative(REPO, BASELINE);
+/** パッケージ索引の never の 1 行目（§10-3 が文言まで指定している） */
+const FIRST_NEVER = "部品は `@edgescrum/ds-core` から import する。作り直さない。";
+
+/**
+ * index.ts から「部品」を export しているモジュール名を集める。
+ * 部品 = 値（型ではない）として PascalCase の名前を 1 つ以上 export しているモジュール。
+ * `cx` / `useIsDesktop` / `CONTENT_WIDTH_CLASS` だけのモジュールは部品ではない。
+ */
+async function componentModules() {
+  const index = await readFile(join(SRC, "index.ts"), "utf8");
+  const mods = new Set();
+  for (const m of index.matchAll(/export\s+(type\s+)?\{([^}]*)\}\s+from\s+"\.\/([^"]+)"/g)) {
+    if (m[1]) continue; // export type { … }
+    const names = m[2]
+      .replace(/\/\/.*$/gm, "")
+      .split(",")
+      .map((x) => x.trim().split(/\s+as\s+/).pop())
+      .filter(Boolean);
+    if (names.some((n) => /^[A-Z][a-z0-9]+[A-Za-z0-9]*$/.test(n) && /[a-z]/.test(n))) mods.add(m[3]);
+  }
+  return [...mods].sort();
+}
+
+/**
+ * 約束の欠落（missing）と baseline を突き合わせる純関数。verify と標本の両方が使う。
+ * @returns {string[]} 問題の一覧
+ */
+function ratchetProblems({ modules, contracts, baseline }) {
+  const problems = [];
+  const missing = modules.filter((m) => !contracts.has(m));
+  for (const m of missing) {
+    if (!baseline.includes(m)) {
+      problems.push(`${m}: 約束（src/${m}.design.md）が無い。新しく export する部品は約束とセットで入れる（§10-5）`);
+    }
+  }
+  for (const m of baseline) {
+    if (!modules.includes(m)) problems.push(`${m}: baseline にあるが export されている部品ではない（baseline から消す）`);
+    else if (contracts.has(m)) problems.push(`${m}: 約束を書いたので baseline から消す（ラチェットは減ることしか許さない）`);
+  }
+  return problems;
+}
+
+const designMdText = await readFile(DESIGN_MD, "utf8").catch(() => null);
+const contractFiles = await findContractFiles(SRC);
+const contractNames = new Set(contractFiles.map((f) => relative(SRC, f).replace(/\.design\.md$/, "")));
+const baseline = JSON.parse(await readFile(BASELINE, "utf8")).missing;
+
+await check("verify:design-md-frontmatter — 先頭 YAML が生成結果と一致する（手で触らない）", async () => {
+  assert(designMdText, "packages/ui/DESIGN.md が無い");
+  const { frontmatter } = splitDesignMd(designMdText);
+  const expected = await expectedFrontmatter(HERE);
+  assert(frontmatter === expected, `先頭 YAML が生成結果と違う。手で直さず \`pnpm build\` する\n期待:\n${expected}\n実際:\n${frontmatter}`);
+});
+
+await check("verify:design-md-never — パッケージ全体の never の 1 行目が §10-3 の文言", async () => {
+  assert(designMdText, "packages/ui/DESIGN.md が無い");
+  const body = splitDesignMd(designMdText).body;
+  const m = /^## Never[^\n]*\n+- (.+)$/m.exec(body);
+  assert(m, "本文に「## Never」とその下の箇条が無い");
+  assert(m[1].trim() === FIRST_NEVER, `never の 1 行目が違う\n        期待: ${FIRST_NEVER}\n        実際: ${m[1]}`);
+  const firstH2 = /^## .*/m.exec(body)?.[0] ?? "";
+  assert(firstH2.startsWith("## Never"), `最初の節が Never ではない: ${firstH2}`);
+});
+
+await check("verify:design-md-refs — `@path` の参照先がすべて存在し、*.design.md が全部辿れる", async () => {
+  const { refs, problems, reached } = await checkRefs(DESIGN_MD);
+  assert(problems.length === 0, problems.join("\n"));
+  assert(refs.length >= 2, `参照が少なすぎる（${refs.length} 件）。走査が空振りしている`);
+  const orphans = contractFiles.filter((f) => !reached.has(f)).map((f) => relative(HERE, f));
+  assert(orphans.length === 0, `DESIGN.md から @path で参照されていない約束:\n  ${orphans.join("\n  ")}`);
+});
+
+await check("verify:design-contract — *.design.md が §10-2 の必須欄を満たす", async () => {
+  assert(contractFiles.length >= 1, "*.design.md が 1 件も無い。走査が空振りしている");
+  const problems = [];
+  for (const file of contractFiles) {
+    const { problems: p } = parseContract(await readFile(file, "utf8"));
+    problems.push(...p.map((x) => `${relative(HERE, file)}: ${x}`));
+  }
+  assert(problems.length === 0, problems.join("\n"));
+});
+
+await check("verify:design-contract — 検査器が違反を拒否する（標本: Toggle の約束を壊す）", async () => {
+  const toggle = await readFile(join(SRC, "Toggle.design.md"), "utf8");
+  assert(parseContract(toggle).problems.length === 0, "標本の元（Toggle.design.md）が通らない");
+  const without = (key) => toggle.replace(new RegExp(`^- ${key}:[^\\n]*\\n(\\s{2,}- [^\\n]*\\n)*`, "m"), "");
+  const emptied = (key) => toggle.replace(new RegExp(`^(- ${key}:)[^\\n]*\\n(\\s{2,}- [^\\n]*\\n)*`, "m"), "$1\n");
+  for (const key of ["purpose", "use_when", "dont_use_when", "never", "check", "decided_by"]) {
+    const p = parseContract(without(key)).problems;
+    assert(p.some((x) => x.includes(`"${key}" が無い`)), `${key} を消しても通る: ${p}`);
+  }
+  for (const key of ["dont_use_when", "never"]) {
+    const p = parseContract(emptied(key)).problems;
+    assert(p.some((x) => x.includes(`"${key}" が空`)), `${key} を空にしても通る: ${p}`);
+  }
+  const noArrow = toggle.replace(/^(\s{2,}- 操作を実行する（送信・取り消し）)→ Button$/m, "$1");
+  assert(noArrow !== toggle, "標本の書き換えが当たっていない（Toggle.design.md の文言が変わった）");
+  assert(parseContract(noArrow).problems.some((x) => x.includes("→")), "→ の無い dont_use_when が通る");
+});
+
+await check("verify:design-contract-coverage — export される部品はすべて約束を持つ（ラチェット）", async () => {
+  const modules = await componentModules();
+  assert(modules.length >= 15, `部品のモジュールが少なすぎる（${modules.length} 件）。index.ts の読み取りが空振りしている`);
+  assert(modules.includes("Toggle") && modules.includes("icons"), `部品の判定がずれている: ${modules.join(", ")}`);
+  const problems = ratchetProblems({ modules, contracts: contractNames, baseline });
+  assert(problems.length === 0, problems.join("\n"));
+});
+
+await check("verify:design-contract-coverage — 検査器が違反を拒否する（標本）", async () => {
+  const modules = ["Toggle", "Button", "NewPart"];
+  const contracts = new Set(["Toggle"]);
+  // 新しい export に約束が無い → 落ちる
+  assert(ratchetProblems({ modules, contracts, baseline: ["Button"] }).some((p) => p.startsWith("NewPart")), "約束の無い新部品が通る");
+  // 約束を書いたのに baseline に残す → 落ちる
+  assert(ratchetProblems({ modules, contracts, baseline: ["Toggle", "Button", "NewPart"] }).some((p) => p.startsWith("Toggle")), "baseline の消し忘れが通る");
+  // 実在しない名前 → 落ちる
+  assert(ratchetProblems({ modules, contracts, baseline: ["Button", "NewPart", "Ghost"] }).some((p) => p.startsWith("Ghost")), "架空の baseline が通る");
+  assert(ratchetProblems({ modules, contracts, baseline: ["Button", "NewPart"] }).length === 0, "正しい組み合わせが落ちる");
+});
+
+/**
+ * baseline は**減ることしか許さない**。同じ PR で baseline に名前を足せば上の検査は通ってしまうので、
+ * base ブランチ（PR なら GITHUB_BASE_REF、それ以外は main）の baseline と比べる。
+ * CI は ci.yml で fetch-depth: 0 にしてある。ローカルで origin/<base> が無いときだけ飛ばす（CI では落とす）。
+ */
+await check("verify:design-contract-baseline — baseline が base ブランチより増えていない", async () => {
+  const base = `origin/${process.env.GITHUB_BASE_REF || "main"}`;
+  const git = (...args) => execFileSync("git", args, { cwd: REPO, encoding: "utf8", stdio: ["ignore", "pipe", "pipe"] });
+  try {
+    git("rev-parse", "--verify", "--quiet", base);
+  } catch {
+    assert(!process.env.CI, `${base} が無い（CI では fetch-depth: 0 が要る）`);
+    console.log(`        (${base} が無いので比較を飛ばした・ローカルのみ)`);
+    return;
+  }
+  let before;
+  try {
+    before = JSON.parse(git("show", `${base}:${BASELINE_REL}`)).missing;
+  } catch {
+    console.log(`        (${base} に baseline がまだ無い = 導入 PR。比較は次から効く)`);
+    return;
+  }
+  const added = baseline.filter((m) => !before.includes(m));
+  assert(added.length === 0, `baseline に増えた部品がある（${base} と比較）: ${added.join(", ")}\n        約束を書いて export すること`);
 });
 
 console.log(failed === 0 ? "layers: 全検査 PASS" : `layers: ${failed} 件 FAIL`);

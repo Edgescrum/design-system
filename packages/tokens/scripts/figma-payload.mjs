@@ -82,23 +82,46 @@ export function dimensionToNumber(value) {
  * Figma の数値 Variable は単位なし px なので、rem は ×16 で換算する
  * （radius/control 0.75rem → 12 等）。
  */
-export function flattenDimensions(node, path = []) {
+export function flattenDimensions(node, path = [], root = node) {
   const out = [];
   for (const [key, val] of Object.entries(node)) {
     if (key.startsWith("$")) continue;
     if (val && typeof val === "object" && "$value" in val) {
-      if (val.$type === "dimension") {
+      if (val.$type === "dimension" || val.$type === "fontWeight") {
+        // 別名（text.role.caption = {text.2xs}）は Figma でも別名（VARIABLE_ALIAS）にする。
+        // 値を写すと text/2xs を変えたときに caption だけ取り残される
+        const aliasOf =
+          typeof val.$value === "string" && val.$value.startsWith("{") ? val.$value.slice(1, -1) : null;
         out.push({
           path: [...path, key],
-          number: dimensionToNumber(val.$value),
+          number: aliasOf ? resolveNumber(root, aliasOf) : toNumber(val),
           description: val.$description ?? "",
+          ...(aliasOf ? { dimensionAliasOf: aliasOf } : {}),
         });
       }
     } else if (val && typeof val === "object") {
-      out.push(...flattenDimensions(val, [...path, key]));
+      out.push(...flattenDimensions(val, [...path, key], root));
     }
   }
   return out;
+}
+
+/** fontWeight（400 等の数値）はそのまま、dimension は px の数値に。 */
+const toNumber = (token) =>
+  token.$type === "fontWeight" ? Number(token.$value) : dimensionToNumber(token.$value);
+
+/** `text.2xs` → 同じツリーの中の実値（px の数値）。 */
+function resolveNumber(root, dotted) {
+  let node = root;
+  for (const key of dotted.split(".")) {
+    node = node?.[key];
+    if (!node) throw new Error(`参照が解決できません: {${dotted}}`);
+  }
+  if (!("$value" in node)) throw new Error(`参照先がトークンではありません: {${dotted}}`);
+  if (typeof node.$value === "string" && node.$value.startsWith("{")) {
+    return resolveNumber(root, node.$value.slice(1, -1));
+  }
+  return toNumber(node);
 }
 
 /**
@@ -108,6 +131,7 @@ export function flattenDimensions(node, path = []) {
  * @param {object} input.primitivesJson tokens/color.primitives.json の中身
  * @param {object} input.semanticJson   tokens/color.semantic.json の中身
  * @param {object} input.dimensionJson  tokens/dimension.json の中身
+ * @param {object} [input.typographyJson] tokens/typography.json の中身（font.weight.* を FLOAT で同期）
  * @param {Array<{name: string, overrides: object}>} input.modes tokens/modes/*.json
  * @param {string} input.defaultModeName 既定モードの名前（"Base"）
  * @param {object} input.existing GET /variables/local の `meta`（新規ファイルなら空の形）
@@ -117,13 +141,24 @@ export function buildFigmaPayload({
   primitivesJson,
   semanticJson,
   dimensionJson,
+  typographyJson = {},
   modes = [],
   defaultModeName,
   existing,
 }) {
   const primitives = flattenColors(primitivesJson);
   const semantics = flattenColors(semanticJson).map((t) => ({ ...t, path: ["color", ...t.path] }));
-  const dimensions = flattenDimensions(dimensionJson);
+  // 別名は参照先より後に並べる（参照先の変数 id が先に決まっている必要がある）。
+  // 別名でないものの並びは従来どおり
+  const allDimensions = [
+    ...flattenDimensions(dimensionJson),
+    // 太さ（§10-8 の 3 種）。フォントスタックは Figma の数値 Variable にならないので載せない
+    ...flattenDimensions(typographyJson),
+  ];
+  const dimensions = [
+    ...allDimensions.filter((t) => !t.dimensionAliasOf),
+    ...allDimensions.filter((t) => t.dimensionAliasOf),
+  ];
 
   // セマンティックの {color.x.y} 参照をプリミティブの実値に解決する
   const primitiveByRef = new Map(
@@ -168,6 +203,13 @@ export function buildFigmaPayload({
   }
 
   const SCOPES_BY_NAMESPACE = { space: ["GAP"], size: ["WIDTH_HEIGHT"] };
+  /**
+   * 名前空間より細かい単位のスコープ（§10-8 で足した役割トークン）。既存の text/2xs 等は
+   * 従来どおり（= スコープ指定なし）にしておき、payload の既存部分を変えない
+   */
+  const SCOPES_BY_PREFIX = { "text.role": ["FONT_SIZE"], "font.weight": ["FONT_WEIGHT"] };
+  const scopesFor = (path) =>
+    SCOPES_BY_PREFIX[path.slice(0, 2).join(".")] ?? SCOPES_BY_NAMESPACE[path[0]];
 
   function planVariables(tokens, collection, primitiveVarIds, pathIds = null) {
     const ids = new Map();
@@ -188,11 +230,16 @@ export function buildFigmaPayload({
           // ★ 既定の ALL_SCOPES だと、余白や幅の変数が色・角丸・文字サイズのピッカーにまで並ぶ。
           //   ページ余白（space/*）は auto layout の gap / padding、本文幅（size/*）は幅・高さに限る。
           //   作成時にだけ付ける（既存変数は Figma 側で手で絞った値を上書きしない）
-          ...(SCOPES_BY_NAMESPACE[t.path[0]] ? { scopes: SCOPES_BY_NAMESPACE[t.path[0]] } : {}),
+          ...(scopesFor(t.path) ? { scopes: scopesFor(t.path) } : {}),
         });
       }
       // セマンティックはプリミティブ変数への alias、プリミティブ・数値は実値
-      const aliasTarget = t.aliasOf && primitiveVarIds?.get(t.aliasOf);
+      const aliasTarget =
+        (t.aliasOf && primitiveVarIds?.get(t.aliasOf)) ||
+        (t.dimensionAliasOf && pathIds?.get(t.dimensionAliasOf));
+      if (t.dimensionAliasOf && !aliasTarget) {
+        throw new Error(`${name} の別名先 {${t.dimensionAliasOf}} の変数が見つかりません`);
+      }
       payload.variableModeValues.push({
         variableId: varId,
         modeId: collection.modeId,
@@ -300,7 +347,8 @@ export function buildFigmaPayload({
   const semCol = planCollection("Semantic", false);
   const primitiveVarIds = planVariables(primitives, primCol);
   const semanticVarIds = planVariables(semantics, semCol, primitiveVarIds);
-  // 役割トークン（radius/* text/* と ADR 0027 の space/* size/*）は Semantic コレクションの FLOAT 変数
+  // 役割トークン（radius/* text/* と ADR 0027 の space/* size/*・§10-8 の font/weight/*）は
+  // Semantic コレクションの FLOAT 変数
   const dimensionVarIds = new Map();
   planVariables(dimensions, semCol, undefined, dimensionVarIds);
 

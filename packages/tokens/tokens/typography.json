@@ -16,6 +16,85 @@
     "mono": {
       "$type": "fontFamily",
       "$value": ["var(--font-geist-mono)"]
+    },
+    "weight": {
+      "$description": "太さは 3 種類（通常 / 中太 / 太字）に絞る（25_design-system.md §10-8・2026-11-21 運用者裁定）。棚卸しで 6 種類（extrabold / black が 51 か所）あったため",
+      "regular": {
+        "$type": "fontWeight",
+        "$value": 400,
+        "$description": "通常（本文・補足・注記）",
+        "$extensions": {
+          "com.edgescrum.usage": {
+            "purpose": "読ませる文字の既定の太さにする",
+            "use_when": [
+              "本文・補足・注記・入力値"
+            ],
+            "dont_use_when": [
+              "見出し・ラベル・ボタン → font.weight.emphasis",
+              "主要な数値 → font.weight.strong"
+            ],
+            "never": [
+              "extrabold / black（800・900）を使わない",
+              "4 種類目の太さを足さない",
+              "font-[550] のような任意の太さを書かない"
+            ],
+            "check": "evaluator",
+            "decided_by": "peco docs/v2/requirements/25_design-system.md §10-8"
+          }
+        }
+      },
+      "emphasis": {
+        "$type": "fontWeight",
+        "$value": 600,
+        "$description": "中太（見出し・ラベル・ボタン）",
+        "$extensions": {
+          "com.edgescrum.usage": {
+            "purpose": "見出しや操作できる要素を本文から区別する",
+            "use_when": [
+              "見出し・項目のラベル・ボタンの文字",
+              "一覧の行の主たる名前"
+            ],
+            "dont_use_when": [
+              "文章の一部を強調したい → 文言を短くして強調を不要にする",
+              "主要な数値 → font.weight.strong"
+            ],
+            "never": [
+              "extrabold / black（800・900）を使わない",
+              "4 種類目の太さを足さない",
+              "font-[550] のような任意の太さを書かない",
+              "本文の途中を中太にして強調しない"
+            ],
+            "check": "evaluator",
+            "decided_by": "peco docs/v2/requirements/25_design-system.md §10-8"
+          }
+        }
+      },
+      "strong": {
+        "$type": "fontWeight",
+        "$value": 700,
+        "$description": "太字（数値表示・ごく短い強調）",
+        "$extensions": {
+          "com.edgescrum.usage": {
+            "purpose": "画面の主役の数値やごく短い語を最も強く見せる",
+            "use_when": [
+              "text.role.numeric の数値",
+              "バッジ等の 1〜2 語の強調"
+            ],
+            "dont_use_when": [
+              "見出し → font.weight.emphasis",
+              "文章 → font.weight.regular"
+            ],
+            "never": [
+              "extrabold / black（800・900）を使わない",
+              "4 種類目の太さを足さない",
+              "font-[550] のような任意の太さを書かない",
+              "1 画面で太字の要素を増やして強調を薄めない"
+            ],
+            "check": "evaluator",
+            "decided_by": "peco docs/v2/requirements/25_design-system.md §10-8"
+          }
+        }
+      }
     }
   }
 }

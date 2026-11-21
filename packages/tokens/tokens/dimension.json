@@ -2,7 +2,139 @@
   "text": {
     "$description": "フォントサイズの追加段。Tailwind 標準（text-xs = 12px）より小さい段への需要が実測で大きい（text-[11px] 256 回 / text-[10px] 166 回・2026-09-27 監査）。font-size のみ定義し line-height の連動トークンは持たない — 既存の text-[11px]（font-size のみ変更）からの置換で行間が変わらないようにするため。",
     "2xs": { "$type": "dimension", "$value": "0.6875rem" },
-    "3xs": { "$type": "dimension", "$value": "0.625rem" }
+    "3xs": { "$type": "dimension", "$value": "0.625rem" },
+    "role": {
+      "$description": "作業画面（productive UI）の文字の階層。用途で 5 段（見出し / 本文 / 補足 / 小さい注記 / 数値表示）に絞る（25_design-system.md §10-8・2026-11-21 運用者裁定）。棚卸しで文字サイズが 30 種類・任意 px 指定が 675 か所あり、階層が実質的に無かったため。宣伝ページ（LP）の大きな文字はこの 5 段とは別系統にする。font-size のみ定義し line-height は持たない（text.2xs と同じ方針）",
+      "heading": {
+        "$type": "dimension",
+        "$value": "1.125rem",
+        "$description": "作業画面の見出し（カード・セクションの題）。18px",
+        "$extensions": {
+          "com.edgescrum.usage": {
+            "purpose": "作業画面のカードやセクションに題を付ける",
+            "use_when": [
+              "管理画面・予約フローのカードやセクションの見出し",
+              "モーダルの題"
+            ],
+            "dont_use_when": [
+              "画面の最上部の画面名 → AppBar の title（大きさは AppBar が持つ）",
+              "宣伝ページ（LP）の大見出し → LP 用の別系統の文字（作業画面の 5 段を使わない）",
+              "数値を大きく見せたい → text.role.numeric"
+            ],
+            "never": [
+              "任意 px 指定（text-[11px] 等）で文字サイズを書かない",
+              "作業画面の文字の段を 6 段目として足さない",
+              "見出しを太さだけで作らない（大きさは heading・太さは font.weight.emphasis と組で使う）"
+            ],
+            "check": "evaluator",
+            "decided_by": "peco docs/v2/requirements/25_design-system.md §10-8"
+          }
+        }
+      },
+      "body": {
+        "$type": "dimension",
+        "$value": "0.875rem",
+        "$description": "作業画面の本文・入力値・一覧の行。14px",
+        "$extensions": {
+          "com.edgescrum.usage": {
+            "purpose": "作業画面で読ませる文字の基準の大きさにする",
+            "use_when": [
+              "一覧の行・カードの本文",
+              "入力欄の値・選択肢・ボタンの文字"
+            ],
+            "dont_use_when": [
+              "入力欄や設定の補足 → text.role.help",
+              "日時・件数などの小さい付記 → text.role.caption",
+              "見出し → text.role.heading"
+            ],
+            "never": [
+              "任意 px 指定（text-[11px] 等）で文字サイズを書かない",
+              "作業画面の文字の段を 6 段目として足さない",
+              "本文を補足の大きさまで下げて文字を詰め込まない → 文言を減らす"
+            ],
+            "check": "evaluator",
+            "decided_by": "peco docs/v2/requirements/25_design-system.md §10-8"
+          }
+        }
+      },
+      "help": {
+        "$type": "dimension",
+        "$value": "0.75rem",
+        "$description": "入力欄・設定の補足（小さい字）。12px",
+        "$extensions": {
+          "com.edgescrum.usage": {
+            "purpose": "入力欄や設定の行に 1 文の補足を添える",
+            "use_when": [
+              "入力欄・トグルの下の補足 1 文",
+              "設定の行の説明 1 文"
+            ],
+            "dont_use_when": [
+              "2 文以上説明したい → 「詳しく」の中（段階的表示の 2 段目）",
+              "注意・エラーを伝えたい → Alert",
+              "日時・件数などの付記 → text.role.caption"
+            ],
+            "never": [
+              "任意 px 指定（text-[11px] 等）で文字サイズを書かない",
+              "作業画面の文字の段を 6 段目として足さない",
+              "スマホと PC の両方に出る補足を 1 文・40 字を超えて書かない",
+              "補足の中に括弧書きを足さない"
+            ],
+            "check": "evaluator",
+            "decided_by": "peco docs/v2/requirements/25_design-system.md §10-8"
+          }
+        }
+      },
+      "caption": {
+        "$type": "dimension",
+        "$value": "{text.2xs}",
+        "$description": "小さい注記（日時・件数・バッジの付記）。11px。値は text.2xs の別名（同じ値を二重に持たない）",
+        "$extensions": {
+          "com.edgescrum.usage": {
+            "purpose": "読み飛ばしてよい小さい付記を添える",
+            "use_when": [
+              "日時・件数・更新者などの付記",
+              "バッジやチップの中の文字"
+            ],
+            "dont_use_when": [
+              "読ませたい説明 → text.role.help",
+              "操作できる要素のラベル → text.role.body"
+            ],
+            "never": [
+              "任意 px 指定（text-[11px] 等）で文字サイズを書かない",
+              "作業画面の文字の段を 6 段目として足さない",
+              "説明文を caption の大きさで書かない → text.role.help に収まる長さに削る"
+            ],
+            "check": "evaluator",
+            "decided_by": "peco docs/v2/requirements/25_design-system.md §10-8"
+          }
+        }
+      },
+      "numeric": {
+        "$type": "dimension",
+        "$value": "1.5rem",
+        "$description": "数値表示（売上・件数・料金などの主要な数値）。24px",
+        "$extensions": {
+          "com.edgescrum.usage": {
+            "purpose": "画面の主役の数値を一目で読ませる",
+            "use_when": [
+              "集計カードの数値（売上・予約件数・残り枠）",
+              "料金の金額表示"
+            ],
+            "dont_use_when": [
+              "見出し → text.role.heading",
+              "文章を強調したい → font.weight.emphasis"
+            ],
+            "never": [
+              "任意 px 指定（text-[11px] 等）で文字サイズを書かない",
+              "作業画面の文字の段を 6 段目として足さない",
+              "数値以外の文言をこの大きさで書かない"
+            ],
+            "check": "evaluator",
+            "decided_by": "peco docs/v2/requirements/25_design-system.md §10-8"
+          }
+        }
+      }
+    }
   },
   "radius": {
     "$description": "角丸の役割トークン。実測の最頻値から抽出（2026-10-06 再計測: rounded-xl 403 / rounded-full 331 / rounded-2xl 317 / rounded-lg 208 / rounded-md 41 / rounded-3xl 13 / rounded-sm 2）。rounded-full は Tailwind 標準でそのまま使えるので役割トークンを作らない。rounded-md 以下の段は用途が定まっておらず、収載すると「迷ったら md」の受け皿になるため意図的に外してある。",
@@ -44,6 +176,81 @@
         "$type": "dimension",
         "$value": "2rem",
         "$description": "本文の左右余白・sm 以上（= sm:px-8）"
+      }
+    },
+    "inset": {
+      "$type": "dimension",
+      "$value": "1rem",
+      "$description": "部品の中の余白（カード・パネル・行の内側）。16px",
+      "$extensions": {
+        "com.edgescrum.usage": {
+          "purpose": "部品の縁と中身の間を空ける",
+          "use_when": [
+            "カード・パネル・設定の行の内側の padding"
+          ],
+          "dont_use_when": [
+            "部品と部品の間 → space.related か space.group",
+            "ページ本文の外枠 → space.page.*（PageBody が持つ）"
+          ],
+          "never": [
+            "余白の値を直書きしない（p-[14px]・gap-3 等）→ 用途のトークンを選ぶ",
+            "用途が合わないときに値が近いトークンで代用しない",
+            "部品ごとに内側の余白を変えない"
+          ],
+          "check": "evaluator",
+          "decided_by": "peco docs/v2/requirements/25_design-system.md §10-8"
+        }
+      }
+    },
+    "related": {
+      "$type": "dimension",
+      "$value": "0.5rem",
+      "$description": "関係が近いもの同士の間（ラベルと入力欄・アイコンと文字・同じまとまりの行）。8px",
+      "$extensions": {
+        "com.edgescrum.usage": {
+          "purpose": "ひとまとまりに見せたい要素同士を近づける",
+          "use_when": [
+            "ラベルと入力欄の間",
+            "アイコンと文字の間",
+            "同じまとまりの中の行同士"
+          ],
+          "dont_use_when": [
+            "別のまとまり同士の間 → space.group",
+            "部品の内側 → space.inset"
+          ],
+          "never": [
+            "余白の値を直書きしない（p-[14px]・gap-3 等）→ 用途のトークンを選ぶ",
+            "用途が合わないときに値が近いトークンで代用しない",
+            "関係が無い要素同士にこの余白を使わない（まとまりが崩れる）"
+          ],
+          "check": "evaluator",
+          "decided_by": "peco docs/v2/requirements/25_design-system.md §10-8"
+        }
+      }
+    },
+    "group": {
+      "$type": "dimension",
+      "$value": "1.5rem",
+      "$description": "まとまり同士の間（セクション・カード同士）。24px",
+      "$extensions": {
+        "com.edgescrum.usage": {
+          "purpose": "別のまとまりであることを余白で区切る",
+          "use_when": [
+            "セクション同士・カード同士の間",
+            "フォームの項目グループ同士の間"
+          ],
+          "dont_use_when": [
+            "ページ本文の上下左右 → space.page.*（PageBody が持つ）",
+            "同じまとまりの中 → space.related"
+          ],
+          "never": [
+            "余白の値を直書きしない（p-[14px]・gap-3 等）→ 用途のトークンを選ぶ",
+            "用途が合わないときに値が近いトークンで代用しない",
+            "区切りのために余白に加えて線や見出しを足さない（余白で足りるなら足さない）"
+          ],
+          "check": "evaluator",
+          "decided_by": "peco docs/v2/requirements/25_design-system.md §10-8"
+        }
       }
     }
   },

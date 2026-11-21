@@ -14,7 +14,10 @@
     "access": "public"
   },
   "files": [
-    "dist"
+    "dist",
+    "DESIGN.md",
+    "src/**/*.design.md",
+    "design-md-baseline.json"
   ],
   "exports": {
     ".": {
@@ -24,7 +27,7 @@
   },
   "sideEffects": false,
   "scripts": {
-    "build": "tsup",
+    "build": "tsup && node scripts/design-md.mjs",
     "typecheck": "tsc --noEmit",
     "verify": "node verify.mjs"
   },
