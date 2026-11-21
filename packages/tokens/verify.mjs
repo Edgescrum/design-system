@@ -35,6 +35,16 @@ import {
   renderModeCss,
 } from "./modes.mjs";
 import { buildFigmaPayload } from "./scripts/figma-payload.mjs";
+import {
+  USAGE_EXTENSION,
+  checkRefs,
+  expectedFrontmatter,
+  findContractFiles,
+  foundationTokens,
+  parseContract,
+  splitDesignMd,
+  validateUsage,
+} from "./scripts/design-md.mjs";
 
 const HERE = dirname(fileURLToPath(import.meta.url));
 const TOKEN_DIR = join(HERE, "tokens");
@@ -347,6 +357,10 @@ const PECO_LAYOUT_VALUES = {
   "size.content.flow-compact": "32rem", // max-w-lg（flow の sm 未満）
   "size.content.wide": "64rem", // max-w-5xl
   "size.content.lp": "72rem", // max-w-6xl
+  // 用途の余白（peco 25_design-system.md §10-8・2026-11-21 裁定）。peco の現行値ではなく新設
+  "space.inset": "1rem", // 部品の中
+  "space.related": "0.5rem", // 関係が近いもの同士
+  "space.group": "1.5rem", // まとまり同士の間
 };
 const layoutTokens = Object.fromEntries(
   Object.keys(LAYOUT_NAMESPACES).flatMap((namespace) =>
@@ -450,6 +464,173 @@ check("verify:layout-modes — Figma payload では FLOAT の実値（px）が�
   eq(values[0].variableId, adminVar.id, "書かれる変数");
   eq(values[0].value, 1440, "90rem → 1440");
 });
+
+// ---------------------------------------------------------------------------
+// 7. 文字の階層・太さ・用途の余白（peco 25_design-system.md §10-8）
+// ---------------------------------------------------------------------------
+const typographyJson = await readJson(join(TOKEN_DIR, "typography.json"));
+
+/** §10-8 の値。変えるなら §10-8 の裁定を先に変えること */
+const ROLE_VALUES = {
+  "text-role-heading": "1.125rem",
+  "text-role-body": "0.875rem",
+  "text-role-help": "0.75rem",
+  "text-role-caption": "0.6875rem",
+  "text-role-numeric": "1.5rem",
+  "font-weight-regular": "400",
+  "font-weight-emphasis": "600",
+  "font-weight-strong": "700",
+};
+
+check("verify:type-roles — theme に文字の 5 段と太さの 3 種が出る", () => {
+  ok(themeCss, "dist が無い。`pnpm build` を先に実行すること");
+  for (const [name, value] of Object.entries(ROLE_VALUES)) {
+    ok(themeCss.includes(`  --${name}: ${value};`), `theme.css に --${name}: ${value} が無い`);
+  }
+  // 入れ子の text.role.* が --text-role に潰れていないこと（build.mjs が path[1] だけを見ていた）
+  ok(!/--text-role:/.test(themeCss), "text.role.* が --text-role に潰れている");
+  // 既存の段は従来どおり
+  ok(themeCss.includes("  --text-2xs: 0.6875rem;"), "--text-2xs が変わった");
+  ok(themeCss.includes("  --text-3xs: 0.625rem;"), "--text-3xs が変わった");
+  // 太さはフォントスタックとして出ていないこと
+  ok(!/--font-weight:/.test(themeCss), "font.weight が --font-weight に潰れている");
+});
+
+check("verify:type-roles — caption は text.2xs の別名（値を二重に持たない）", () => {
+  eq(dimensionJson.text.role.caption.$value, "{text.2xs}", "text.role.caption の $value");
+});
+
+/** 約束が必須のトークン（§10-8 で足したもの）。今後のトークンも足すこと */
+const CONTRACT_REQUIRED_PREFIXES = ["text.role.", "font.weight.", "space.inset", "space.related", "space.group"];
+
+check("verify:token-usage — 約束（$extensions.com.edgescrum.usage）が §10-2 の欄を満たす", () => {
+  const all = [];
+  const visit = (node, path) => {
+    for (const [key, val] of Object.entries(node)) {
+      if (key.startsWith("$") || !val || typeof val !== "object") continue;
+      if ("$value" in val) all.push([[...path, key].join("."), val]);
+      else visit(val, [...path, key]);
+    }
+  };
+  visit({ ...semanticJson, ...dimensionJson, ...typographyJson }, []);
+  const required = all.filter(([p]) => CONTRACT_REQUIRED_PREFIXES.some((x) => p.startsWith(x)));
+  // 空振り防止: 5 段 + 3 種 + 3 種 = 11
+  eq(required.length, 11, "約束が必須のトークン数");
+  const problems = [];
+  for (const [path, token] of all) {
+    const usage = token.$extensions?.[USAGE_EXTENSION];
+    const mustHave = required.some(([p]) => p === path);
+    if (!usage) {
+      if (mustHave) problems.push(`${path}: 約束が無い`);
+      continue;
+    }
+    if (!token.$description) problems.push(`${path}: $description が無い`);
+    for (const p of validateUsage(usage)) problems.push(`${path}: ${p}`);
+  }
+  ok(problems.length === 0, problems.join("\n"));
+});
+
+check("verify:token-usage — 欄の検査器が違反を拒否する（標本）", () => {
+  const good = {
+    purpose: "x",
+    use_when: ["a"],
+    dont_use_when: ["b → c"],
+    never: ["d"],
+    check: "evaluator",
+    decided_by: "e",
+  };
+  eq(validateUsage(good).length, 0, "正しい標本の問題数");
+  ok(validateUsage({ ...good, never: [] }).some((p) => /"never" が空/.test(p)), "never が空でも通る");
+  ok(validateUsage({ ...good, dont_use_when: [] }).some((p) => /"dont_use_when" が空/.test(p)), "dont_use_when が空でも通る");
+  ok(validateUsage({ ...good, dont_use_when: ["b"] }).some((p) => /→/.test(p)), "→ の無い行が通る");
+  const { decided_by: _omit, ...noDecided } = good;
+  ok(validateUsage(noDecided).some((p) => /decided_by/.test(p)), "decided_by が無くても通る");
+  ok(validateUsage({ ...good, dont_use_wen: ["x → y"] }).some((p) => /未知の欄/.test(p)), "綴り違いの欄が通る");
+});
+
+check("verify:figma-type-roles — Figma に FLOAT で載り、caption は text/2xs の別名", () => {
+  const { payload } = buildFigmaPayload({
+    primitivesJson,
+    semanticJson,
+    dimensionJson,
+    typographyJson,
+    modes: [],
+    defaultModeName: DEFAULT_MODE,
+    existing: EMPTY,
+  });
+  const byName = new Map(payload.variables.map((v) => [v.name, v]));
+  const valueOf = (name) => payload.variableModeValues.find((v) => v.variableId === byName.get(name)?.id)?.value;
+  for (const [name, px] of [["text/role/heading", 18], ["text/role/body", 14], ["text/role/help", 12], ["text/role/numeric", 24]]) {
+    eq(valueOf(name), px, name);
+    eq(byName.get(name).scopes?.join(","), "FONT_SIZE", `${name} のスコープ`);
+  }
+  for (const [name, w] of [["font/weight/regular", 400], ["font/weight/emphasis", 600], ["font/weight/strong", 700]]) {
+    eq(valueOf(name), w, name);
+    eq(byName.get(name).scopes?.join(","), "FONT_WEIGHT", `${name} のスコープ`);
+  }
+  const caption = valueOf("text/role/caption");
+  eq(caption?.type, "VARIABLE_ALIAS", "text/role/caption の値の種類");
+  eq(caption.id, byName.get("text/2xs").id, "text/role/caption の別名先");
+  // 既存の text/2xs はスコープを付けない（payload の既存部分を変えない）
+  eq(byName.get("text/2xs").scopes, undefined, "text/2xs のスコープ");
+  for (const name of ["space/inset", "space/related", "space/group"]) {
+    eq(byName.get(name)?.scopes?.join(","), "GAP", `${name} のスコープ`);
+  }
+});
+
+// ---------------------------------------------------------------------------
+// 8. DESIGN.md（ADR-0032 / peco 25_design-system.md §10-3〜§10-5）
+// ---------------------------------------------------------------------------
+const designMdPath = join(HERE, "DESIGN.md");
+const designMd = await readFile(designMdPath, "utf8").catch(() => null);
+const expectedFm = await expectedFrontmatter(HERE, await foundationTokens(HERE));
+const refResult = designMd ? await checkRefs(designMdPath) : null;
+const contractFiles = await Promise.all(
+  (await findContractFiles(HERE)).map(async (file) => ({ file, text: await readFile(file, "utf8") }))
+);
+
+check("verify:design-md-frontmatter — 先頭 YAML が DTCG からの生成結果と一致する（手で触らない）", () => {
+  ok(designMd, "packages/tokens/DESIGN.md が無い");
+  const { frontmatter, body } = splitDesignMd(designMd);
+  ok(frontmatter, "先頭 YAML が無い（`pnpm build` を CI 以外で実行すると書き込まれる）");
+  ok(
+    frontmatter === expectedFm,
+    "先頭 YAML が DTCG からの生成結果と違う。手で直さず、DTCG を直して `pnpm build` する\n" +
+      firstDiff(frontmatter, expectedFm)
+  );
+  ok(/^## Never/m.test(body), "本文の冒頭に ## Never（パッケージ全体の never）が無い");
+  // 空振り防止: 生成結果に今回のトークンが載っていること
+  ok(expectedFm.includes("  role:\n    heading:\n      fontSize: \"1.125rem\""), "typography.role.heading が生成されていない");
+  ok(expectedFm.includes("  inset: \"1rem\""), "spacing.inset が生成されていない");
+});
+
+check("verify:design-md-refs — `@path` の参照先がすべて存在する", () => {
+  ok(refResult, "DESIGN.md が無い");
+  ok(refResult.refs.length >= 3, `参照が少なすぎる（${refResult.refs.length} 件）。走査が空振りしている`);
+  ok(refResult.problems.length === 0, refResult.problems.join("\n"));
+});
+
+// foundation の *.design.md（ガイドライン・§10-6 の 6）はまだ 0 件。置いた時点からこの検査が効く
+check("verify:design-contract — *.design.md が §10-2 の必須欄を満たし、DESIGN.md から辿れる", () => {
+  const problems = [];
+  for (const { file, text } of contractFiles) {
+    const rel = file.slice(HERE.length + 1);
+    const { problems: p } = parseContract(text);
+    problems.push(...p.map((x) => `${rel}: ${x}`));
+    if (!refResult?.reached.has(file)) problems.push(`${rel}: DESIGN.md から @path で参照されていない`);
+  }
+  ok(problems.length === 0, problems.join("\n"));
+});
+
+/** 2 つの文字列の最初に違う行を見せる（frontmatter の差分を読みやすく） */
+function firstDiff(a = "", b = "") {
+  const x = (a ?? "").split("\n");
+  const y = b.split("\n");
+  for (let i = 0; i < Math.max(x.length, y.length); i++) {
+    if (x[i] !== y[i]) return `${i + 1} 行目\n  実際: ${x[i]}\n  期待: ${y[i]}`;
+  }
+  return "";
+}
 
 console.log(`\nトークン検査 ${failed === 0 ? "全件 PASS" : `${failed} 件 FAIL`}`);
 process.exit(failed === 0 ? 0 : 1);

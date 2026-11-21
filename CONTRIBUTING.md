@@ -91,10 +91,28 @@ Code Connect のテンプレート 41 本が `// source=packages/ui/src/...` を
 pnpm build       # トークンと部品のビルド
 pnpm typecheck
 pnpm lint        # 層の向き（eslint.config.mjs）
-pnpm verify      # トークン 18 本（モード機構・ページ余白 / 本文幅）+ 層の検査 10 本 + ページの骨格 5 本
+pnpm verify      # トークン（モード機構・ページ余白 / 本文幅・文字の階層）+ 層の検査 + ページの骨格 + 使い方の約束
 ```
 
 `pnpm verify` は **ESLint を API から呼んで標本コードを食わせる**。
 local のディレクトリはまだ空なので、**標本が無いと境界の規則は 1 度も実行されないまま腐る**
 （作業 3 で「Figma の既定モード名を付けるコードが空のループだった」のと同型）。
 `eslint.config.mjs` の `files:` の綴りを間違えたらここで落ちる。
+
+## 使い方の約束（DESIGN.md）
+
+正は peco の `docs/v2/requirements/25_design-system.md` §10 と
+`docs/adr/0032-ai-readable-usage-contracts-live-next-to-tokens-and-parts.md`。
+
+| 置き場所 | 中身 | 誰が書く |
+|---|---|---|
+| `packages/*/DESIGN.md` の本文 | パッケージの目的・全体の never・索引（`@path` で各約束へ） | 手で書く（正） |
+| `packages/*/DESIGN.md` の先頭 YAML | トークンの値（DTCG から）・name / description（package.json から） | **`pnpm build` が書き込む。手で触らない** |
+| `packages/ui/src/<部品>.design.md` | 部品の約束（purpose / use_when / dont_use_when / never / limits / check / decided_by） | 手で書く（正） |
+| DTCG の `$extensions["com.edgescrum.usage"]` | トークンの約束（同じ欄） | 手で書く（正） |
+
+- **新しく export する部品は `<部品>.design.md` とセットで入れる。** 未記入の既存部品は
+  `packages/ui/design-md-baseline.json` に記録してあり、**減ることしか許さない**（約束を書いたら消す）
+- 先頭 YAML は CI では書き込まれない（書き込むと手で触った YAML を build が上書きしてから検査することになり、必ず緑になる）。
+  DTCG を直したら、ローカルで `pnpm build` して DESIGN.md の差分ごとコミットする
+- 検査は `pnpm verify` の `verify:design-md-*` / `verify:design-contract*` / `verify:token-usage`

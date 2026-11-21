@@ -15,7 +15,8 @@
   },
   "files": [
     "dist",
-    "tokens"
+    "tokens",
+    "DESIGN.md"
   ],
   "exports": {
     "./css": "./dist/css/tokens.css",
