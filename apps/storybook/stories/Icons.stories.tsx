@@ -13,6 +13,7 @@ import {
   EyeIcon,
   GearIcon,
   HeartIcon,
+  InfoIcon,
   LineIcon,
   LinkIcon,
   MenuListIcon,
@@ -50,6 +51,7 @@ const ICONS: Array<[string, ComponentType<SVGProps<SVGSVGElement>>]> = [
   ["LinkIcon", LinkIcon],
   ["SparklesIcon", SparklesIcon],
   ["ExternalLinkIcon", ExternalLinkIcon],
+  ["InfoIcon", InfoIcon],
 ];
 
 const meta: Meta = {

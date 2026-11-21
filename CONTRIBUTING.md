@@ -90,6 +90,7 @@ Code Connect のテンプレート 41 本が `// source=packages/ui/src/...` を
 ```bash
 pnpm build       # トークンと部品のビルド
 pnpm typecheck
+pnpm test        # 部品の振る舞い（開閉・キー操作・読み上げの属性。vitest + jsdom）
 pnpm lint        # 層の向き（eslint.config.mjs）
 pnpm verify      # トークン（モード機構・ページ余白 / 本文幅・文字の階層・プリミティブへの別名・動き）+ 層の検査 + ページの骨格 + 使い方の約束
 ```
