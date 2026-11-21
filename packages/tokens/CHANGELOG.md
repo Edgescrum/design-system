@@ -1,5 +1,14 @@
 # @edgescrum/ds-foundation（旧 @edgescrum/peco-tokens）
 
+## 0.7.0
+
+### Minor Changes
+
+- f06d968: 作業画面の文字の階層（`text.role.heading` / `body` / `help` / `caption` / `numeric`）、太さ 3 種（`font.weight.regular` / `emphasis` / `strong`）、用途の余白 3 種（`space.inset` / `related` / `group`）を追加。各トークンに使い方の約束（`$extensions["com.edgescrum.usage"]`）を付けた。Tailwind では `text-role-*` / `font-regular` 等 / `p-inset` `gap-related` `gap-group` 等で使える。パッケージに `DESIGN.md`（先頭 YAML は DTCG から生成）を同梱。既存の CSS 変数・theme・JSON は追加のみで変更なし（peco 25_design-system.md §10・ADR-0032）。
+- 820f9aa: 文字サイズ・太さ・余白・動きにプリミティブ層を追加し（`font-size.*` / `font-weight.*` / `space-scale.*`（4px グリッド）/ `duration.*` / `easing.*`（IBM Carbon の productive / expressive））、作業画面の用途トークン（`text.*` / `font.weight.*` / `space.*`）をプリミティブへの別名に書き換えた。生成される CSS 変数・theme・JSON の既存の値は 1 バイトも変わらない（追加のみ）。
+
+  動きの用途トークン（`motion.duration.{state-change,feedback,surface,screen}` / `motion.productive.*` / `motion.expressive.*` / `motion.transition.*`）を約束付きで追加。Tailwind では `duration-surface` / `ease-productive-enter` 等、組み合わせは CSS 変数 `--motion-transition-*` で使える。`prefers-reduced-motion: reduce` のときは `tokens.css` が動きの変数を `0ms` に上書きし、色・不透明度の変化（150ms）だけを残す。`DESIGN.md` の先頭 YAML に `motion` 節とプリミティブの段（`typography.scale.*` / `spacing.scale.*`）、本文に Motion 節を追加（peco 25_design-system.md §10-9）。
+
 ## 0.6.0
 
 ### Minor Changes
