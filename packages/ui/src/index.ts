@@ -39,6 +39,8 @@ export { FullScreenLoading } from "./FullScreenLoading";
 export { Modal } from "./Modal";
 export type { ModalProps } from "./Modal";
 export { useDialogBehavior } from "./dialog-behavior";
+export { InfoTip } from "./InfoTip";
+export type { InfoTipProps } from "./InfoTip";
 export { SelectDropdown } from "./SelectDropdown";
 export type { SelectDropdownOption } from "./SelectDropdown";
 export { useIsDesktop } from "./use-is-desktop";
@@ -77,6 +79,7 @@ export {
   LinkIcon,
   SparklesIcon,
   ExternalLinkIcon,
+  InfoIcon,
   // ★ ブランドマーク（旧 `PecoLogo`）は **export しない**（ADR 0026）。
   //   product 層が持つ。共通部品で必要な場所は slot で受け取る
   //   （`FullScreenLoading` の `logo` が唯一の例）。

@@ -48,6 +48,7 @@ tokens/*.json (DTCG) ← 唯一の正
 pnpm install
 pnpm build        # 全パッケージのビルド（tokens → Style Dictionary / ui → tsup）
 pnpm typecheck
+pnpm test         # 部品の振る舞いの単体テスト（vitest + jsdom・packages/ui/test）
 pnpm verify       # トークンの機械検査（モード機構を含む）
 pnpm --filter ds-storybook dev   # カタログをローカルで（http://localhost:6006）
 ```

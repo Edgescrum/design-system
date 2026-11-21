@@ -23,6 +23,9 @@ jobs:
       - run: pnpm install --frozen-lockfile
       - run: pnpm build
       - run: pnpm typecheck
+      # 部品の振る舞いの単体テスト（vitest + jsdom）。開閉・キー操作・読み上げの属性のように
+      # 「押すと状態が変わる」ものはサーバー描画の文字列比較（verify）では試せないため（#53）。
+      - run: pnpm test
       # 層の向き（ADR 0026 §9-3・作業 5）。foundation → core / core → local /
       # local:X → local:Y と旧名 @edgescrum/peco-* を error にする。
       # 定義は layers.mjs の 1 箇所だけ（eslint と verify が同じものを読む）。

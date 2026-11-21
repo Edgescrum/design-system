@@ -265,3 +265,20 @@ export function ExternalLinkIcon({ width = 12, height = 12, ...props }: SVGProps
     </svg>
   );
 }
+
+/**
+ * i マーク（Lucide `info`・ISC）。`InfoTip` のトリガーが使う（#53・peco 25_design-system.md §10-10）。
+ *
+ * 既定 16px は §10-10 の「アイコン 16px」。Figma の Screen ファイルの `InfoTip`（412:299）の
+ * `icon/info` と同じ形（円 r=10・縦棒・点。16px に縮めると線幅 1.33px）。
+ * 色は currentColor なので、閉じているとき `text-muted`・開いているとき `text-accent` を親が決める。
+ */
+export function InfoIcon({ width = 16, height = 16, ...props }: SVGProps<SVGSVGElement>) {
+  return (
+    <svg width={width} height={height} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}>
+      <circle cx="12" cy="12" r="10" />
+      <path d="M12 16v-4" />
+      <path d="M12 8h.01" />
+    </svg>
+  );
+}
