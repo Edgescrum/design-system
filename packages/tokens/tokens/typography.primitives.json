@@ -1,0 +1,78 @@
+{
+  "font-size": {
+    "$description": "文字サイズのプリミティブ（生の段・単位は rem）。キーは px の値。peco の実測で使われている段だけを収載した（2026-09-27 / 2026-11-21 の監査）。★ アプリコードから直接使わない — セマンティックの役割（text.role.* / text.2xs 等）から参照する。color.primitives.json の color.* と同じ位置づけ",
+    "10": {
+      "$type": "dimension",
+      "$value": "0.625rem",
+      "$description": "10px"
+    },
+    "11": {
+      "$type": "dimension",
+      "$value": "0.6875rem",
+      "$description": "11px"
+    },
+    "12": {
+      "$type": "dimension",
+      "$value": "0.75rem",
+      "$description": "12px"
+    },
+    "14": {
+      "$type": "dimension",
+      "$value": "0.875rem",
+      "$description": "14px"
+    },
+    "16": {
+      "$type": "dimension",
+      "$value": "1rem",
+      "$description": "16px"
+    },
+    "18": {
+      "$type": "dimension",
+      "$value": "1.125rem",
+      "$description": "18px"
+    },
+    "20": {
+      "$type": "dimension",
+      "$value": "1.25rem",
+      "$description": "20px"
+    },
+    "24": {
+      "$type": "dimension",
+      "$value": "1.5rem",
+      "$description": "24px"
+    },
+    "30": {
+      "$type": "dimension",
+      "$value": "1.875rem",
+      "$description": "30px"
+    },
+    "36": {
+      "$type": "dimension",
+      "$value": "2.25rem",
+      "$description": "36px"
+    }
+  },
+  "font-weight": {
+    "$description": "太さのプリミティブ（生の段）。キーは数値の太さ。500 はいまのセマンティックから参照されていないが、モードで役割の割り当てを差し替えるときの段として持つ。★ アプリコードから直接使わない — font.weight.* から参照する",
+    "400": {
+      "$type": "fontWeight",
+      "$value": 400,
+      "$description": "400"
+    },
+    "500": {
+      "$type": "fontWeight",
+      "$value": 500,
+      "$description": "500"
+    },
+    "600": {
+      "$type": "fontWeight",
+      "$value": 600,
+      "$description": "600"
+    },
+    "700": {
+      "$type": "fontWeight",
+      "$value": 700,
+      "$description": "700"
+    }
+  }
+}

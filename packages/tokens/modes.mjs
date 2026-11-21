@@ -124,6 +124,39 @@ export function overridableKeys(semanticJson, dimensionJson) {
   return keys;
 }
 
+/**
+ * **プリミティブ層の名前空間**（build・verify・Figma payload・DESIGN.md が同じ 1 つを使う）。
+ *
+ * | 名前空間 | ファイル | 中身 | 参照するセマンティック |
+ * |---|---|---|---|
+ * | `color` | color.primitives.json | 色の階段 | color.semantic.json |
+ * | `font-size` | typography.primitives.json | 文字サイズの段（キー = px） | `text.*` |
+ * | `font-weight` | typography.primitives.json | 太さの段（キー = 数値） | `font.weight.*` |
+ * | `space-scale` | space.primitives.json | 4px グリッドの余白の段（キー = px） | `space.*` |
+ * | `duration` | motion.primitives.json | 時間の段（キー = ms） | `motion.duration.*` / `motion.transition.*` |
+ * | `easing` | motion.primitives.json | イージング（Carbon の値） | `motion.productive.*` / `motion.expressive.*` |
+ *
+ * ★ プリミティブは **theme.css に出さない**（Tailwind のユーティリティを生やさない =
+ *   アプリが直接使えない）。primitives.css（参照・ドキュメント用）と tokens.json にだけ出る。
+ *   **モードも持たない**（ADR 0026 Decision 3。`assertModeOverridesSemanticOnly()` が拒否する）。
+ *   名前空間を足したら、ここに足すだけで build の除外・verify の別名検査・モードの拒否に効く。
+ */
+export const PRIMITIVE_NAMESPACES = ["color", "font-size", "font-weight", "space-scale", "duration", "easing"];
+
+/** キー（ドット区切り）がプリミティブ層のものか。 */
+export const isPrimitiveKey = (key) => PRIMITIVE_NAMESPACES.includes(key.split(".")[0]);
+
+/** 動きの用途トークンの名前空間（`motion.json`）。 */
+export const MOTION_NAMESPACE = "motion";
+
+/**
+ * prefers-reduced-motion: reduce のときに 0ms にするかどうか（§10-9）。
+ * motion.json の時間・transition の各トークンが `$extensions` に持つ:
+ * `"remove"`（位置・大きさ・回転の動き → 0ms にする）/ `"keep"`（色・不透明度 → 150ms 以下で残す）。
+ * build.mjs が @media を書き、verify.mjs が漏れと矛盾を検査する。
+ */
+export const REDUCED_MOTION_EXTENSION = "com.edgescrum.reduced-motion";
+
 /** `space.page.block` のようなキーが dimension（レイアウト）側のものか。 */
 export const isLayoutKey = (key) => Object.hasOwn(LAYOUT_NAMESPACES, key.split(".")[0]);
 
@@ -175,7 +208,7 @@ export function flattenOverrides(node, path = [], out = {}) {
  * 1. **綴り間違いが黙って死ぬ** — `acccent` と書いても CSS 変数が 1 本増えるだけで、
  *    誰も使わないので気づけない。既定に無いキーは拒否する
  * 2. **primitives にモードが生える** — ADR 0026 Decision 3 が明示的に禁止している。
- *    `color.*` 名前空間のキーは拒否する
+ *    `PRIMITIVE_NAMESPACES`（`color.*` / `font-size.*` / `space-scale.*` / `duration.*` …）のキーは拒否する
  * 3. **効かない上書き** — `text.*` / `radius.*` は theme に実値で焼き込まれるので、
  *    モードで変えても画面は変わらない（`LAYOUT_NAMESPACES` の注記）。拒否する
  *
@@ -185,10 +218,15 @@ export function flattenOverrides(node, path = [], out = {}) {
 export function assertModeOverridesSemanticOnly(mode, defaultKeys) {
   const problems = [];
   for (const key of Object.keys(mode.overrides)) {
-    if (key === "color" || key.startsWith("color.")) {
+    if (isPrimitiveKey(key)) {
       problems.push(
         `  ${key} — primitives はモードを持たない（ADR 0026 Decision 3）。` +
           `semantic の役割トークン側を上書きすること`
+      );
+    } else if (key.startsWith(`${MOTION_NAMESPACE}.`)) {
+      problems.push(
+        `  ${key} — motion はまだモードの対象外（renderModeCss と Figma payload が transition / cubicBezier を書けない）。` +
+          `対象にするときは modes.mjs と figma-payload.mjs を先に直すこと`
       );
     } else if (key.startsWith("text.") || key.startsWith("radius.")) {
       problems.push(

@@ -35,7 +35,8 @@ PeCo の既定が壊れる、という形でしか現れない。`verify.mjs` �
      いるので、モードで変数を出してもどのユーティリティも読まず、**上書きできたように見えて
      何も変わらない**。理由の詳細は `modes.mjs` の `LAYOUT_NAMESPACES`
    - **既定に無いキーはビルドが落ちる**（綴り違いが黙って死なないように）
-   - **`color.*`（primitives）は書けない** — ADR 0026 Decision 3 が禁止している
+   - **プリミティブ（`color.*` / `font-size.*` / `font-weight.*` / `space-scale.*` / `duration.*` / `easing.*`）は書けない** — ADR 0026 Decision 3 が禁止している
+   - **`motion.*` はまだ書けない**（モードの CSS 生成と Figma payload が transition / cubicBezier を扱えない。対象にするときは `modes.mjs` と `figma-payload.mjs` を先に直す）
 
 2. `pnpm build` → `dist/css/modes/<名>.css` が出る（**既定の `tokens.css` は 1 バイトも変わらない**）
 

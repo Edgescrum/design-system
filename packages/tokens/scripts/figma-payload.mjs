@@ -18,6 +18,16 @@
  */
 import { isLayoutKey } from "../modes.mjs";
 
+/**
+ * ★ **Figma Variables に写せない DTCG の型。** Figma の変数は BOOLEAN / FLOAT / STRING / COLOR
+ *   の 4 型しか無く、イージング（cubicBezier = 4 つの数の組）と transition（時間 + 遅延 + イージングの
+ *   合成）を表せない。STRING で `cubic-bezier(…)` を入れても Figma のどのプロパティにも
+ *   バインドできず、写しとして意味が無い。**落とさずに明示的に飛ばし、stats.skipped に記録する**
+ *   （黙って消えると「同期したはず」の誤解が出る。verify:figma-motion が件数を見る）。
+ *   時間（duration）は FLOAT（ms の数値）で写す。
+ */
+export const FIGMA_UNSUPPORTED_TYPES = ["cubicBezier", "transition"];
+
 /** #rrggbb または oklch(L% C H) → Figma の RGBA (0..1) */
 export function cssColorToRgba(value) {
   const hex = /^#([0-9a-f]{6})$/i.exec(value.trim());
@@ -70,6 +80,13 @@ export function flattenColors(node, path = []) {
   return out;
 }
 
+/** `250ms` → Figma の数値（単位なし ms）。 */
+export function durationToNumber(value) {
+  const m = /^([\d.]+)ms$/.exec(value);
+  if (!m) throw new Error(`duration が ms 形式ではありません: ${value}`);
+  return Number(m[1]);
+}
+
 /** `0.75rem` / `1280px` → Figma の数値（単位なし px）。rem は ×16。 */
 export function dimensionToNumber(value) {
   const m = /^([\d.]+)(px|rem)$/.exec(value);
@@ -82,12 +99,16 @@ export function dimensionToNumber(value) {
  * Figma の数値 Variable は単位なし px なので、rem は ×16 で換算する
  * （radius/control 0.75rem → 12 等）。
  */
-export function flattenDimensions(node, path = [], root = node) {
+export function flattenDimensions(node, path = [], root = node, skipped = []) {
   const out = [];
   for (const [key, val] of Object.entries(node)) {
     if (key.startsWith("$")) continue;
     if (val && typeof val === "object" && "$value" in val) {
-      if (val.$type === "dimension" || val.$type === "fontWeight") {
+      if (FIGMA_UNSUPPORTED_TYPES.includes(val.$type)) {
+        skipped.push({ path: [...path, key].join("."), type: val.$type });
+        continue;
+      }
+      if (val.$type === "dimension" || val.$type === "fontWeight" || val.$type === "duration") {
         // 別名（text.role.caption = {text.2xs}）は Figma でも別名（VARIABLE_ALIAS）にする。
         // 値を写すと text/2xs を変えたときに caption だけ取り残される
         const aliasOf =
@@ -100,15 +121,19 @@ export function flattenDimensions(node, path = [], root = node) {
         });
       }
     } else if (val && typeof val === "object") {
-      out.push(...flattenDimensions(val, [...path, key], root));
+      out.push(...flattenDimensions(val, [...path, key], root, skipped));
     }
   }
   return out;
 }
 
-/** fontWeight（400 等の数値）はそのまま、dimension は px の数値に。 */
+/** fontWeight（400 等の数値）はそのまま、duration は ms の数値、dimension は px の数値に。 */
 const toNumber = (token) =>
-  token.$type === "fontWeight" ? Number(token.$value) : dimensionToNumber(token.$value);
+  token.$type === "fontWeight"
+    ? Number(token.$value)
+    : token.$type === "duration"
+      ? durationToNumber(token.$value)
+      : dimensionToNumber(token.$value);
 
 /** `text.2xs` → 同じツリーの中の実値（px の数値）。 */
 function resolveNumber(root, dotted) {
@@ -132,6 +157,11 @@ function resolveNumber(root, dotted) {
  * @param {object} input.semanticJson   tokens/color.semantic.json の中身
  * @param {object} input.dimensionJson  tokens/dimension.json の中身
  * @param {object} [input.typographyJson] tokens/typography.json の中身（font.weight.* を FLOAT で同期）
+ * @param {object} [input.scalePrimitivesJson] typography / space / motion の primitives.json を
+ *   合わせたもの（font-size.* / font-weight.* / space-scale.* / duration.* を Primitives コレクションの
+ *   FLOAT で同期。easing.* は FIGMA_UNSUPPORTED_TYPES なので飛ばす）
+ * @param {object} [input.motionJson] tokens/motion.json の中身（motion.duration.* だけを Semantic の
+ *   FLOAT で同期し、プリミティブへの別名にする。イージングと transition は飛ばす）
  * @param {Array<{name: string, overrides: object}>} input.modes tokens/modes/*.json
  * @param {string} input.defaultModeName 既定モードの名前（"Base"）
  * @param {object} input.existing GET /variables/local の `meta`（新規ファイルなら空の形）
@@ -142,6 +172,8 @@ export function buildFigmaPayload({
   semanticJson,
   dimensionJson,
   typographyJson = {},
+  scalePrimitivesJson = {},
+  motionJson = {},
   modes = [],
   defaultModeName,
   existing,
@@ -150,15 +182,32 @@ export function buildFigmaPayload({
   const semantics = flattenColors(semanticJson).map((t) => ({ ...t, path: ["color", ...t.path] }));
   // 別名は参照先より後に並べる（参照先の変数 id が先に決まっている必要がある）。
   // 別名でないものの並びは従来どおり
+  // 別名（{font-size.18} 等）はファイルをまたぐので、解決用の木は全部を合わせたもの
+  const root = { ...scalePrimitivesJson, ...dimensionJson, ...typographyJson, ...motionJson };
+  const skipped = [];
+  // 数値のプリミティブ（文字サイズ・太さ・余白・時間）。色のプリミティブと同じ Primitives コレクションに置く
+  const scalePrimitives = flattenDimensions(scalePrimitivesJson, [], root, skipped);
   const allDimensions = [
-    ...flattenDimensions(dimensionJson),
+    ...flattenDimensions(dimensionJson, [], root, skipped),
     // 太さ（§10-8 の 3 種）。フォントスタックは Figma の数値 Variable にならないので載せない
-    ...flattenDimensions(typographyJson),
+    ...flattenDimensions(typographyJson, [], root, skipped),
+    // 動きの時間（§10-9）。イージングと transition は Figma で表せないので skipped に入る
+    ...flattenDimensions(motionJson, [], root, skipped),
   ];
-  const dimensions = [
-    ...allDimensions.filter((t) => !t.dimensionAliasOf),
-    ...allDimensions.filter((t) => t.dimensionAliasOf),
-  ];
+  // 別名は参照先より後に並べる（参照先の変数 id が先に決まっている必要がある）。
+  // text.role.caption → text.2xs → font-size.11 のように別名が連なるので、同じ Semantic の中で
+  // 別名先が先に来るよう「連なりの深さ」で並べる（安定ソートなので同じ深さの並びは従来どおり）
+  const aliasDepth = (t) => {
+    let depth = 0;
+    let ref = t.dimensionAliasOf;
+    const byPath = new Map(allDimensions.map((x) => [x.path.join("."), x]));
+    while (ref && byPath.has(ref)) {
+      depth++;
+      ref = byPath.get(ref).dimensionAliasOf;
+    }
+    return t.dimensionAliasOf ? depth + 1 : 0;
+  };
+  const dimensions = [...allDimensions].sort((a, b) => aliasDepth(a) - aliasDepth(b));
 
   // セマンティックの {color.x.y} 参照をプリミティブの実値に解決する
   const primitiveByRef = new Map(
@@ -202,12 +251,27 @@ export function buildFigmaPayload({
     return { id, name, modeId: `temp_mode_${id}`, created: true };
   }
 
-  const SCOPES_BY_NAMESPACE = { space: ["GAP"], size: ["WIDTH_HEIGHT"] };
+  const SCOPES_BY_NAMESPACE = {
+    space: ["GAP"],
+    size: ["WIDTH_HEIGHT"],
+    // プリミティブの段（Primitives コレクションは非公開だが、ライブラリのファイル内のピッカーを汚さない）
+    "font-size": ["FONT_SIZE"],
+    "font-weight": ["FONT_WEIGHT"],
+    "space-scale": ["GAP"],
+    // ★ 時間を受けるプロパティが Figma に無い（プロトタイプの遷移時間は変数にバインドできない）。
+    //   既定の ALL_SCOPES だと 250 が幅・余白・角丸のピッカーに並ぶので、どのピッカーにも出さない
+    //   （値の写しとしてだけ持つ。Figma の UI で「すべてのチェックを外した」状態と同じ）
+    duration: [],
+  };
   /**
    * 名前空間より細かい単位のスコープ（§10-8 で足した役割トークン）。既存の text/2xs 等は
    * 従来どおり（= スコープ指定なし）にしておき、payload の既存部分を変えない
    */
-  const SCOPES_BY_PREFIX = { "text.role": ["FONT_SIZE"], "font.weight": ["FONT_WEIGHT"] };
+  const SCOPES_BY_PREFIX = {
+    "text.role": ["FONT_SIZE"],
+    "font.weight": ["FONT_WEIGHT"],
+    "motion.duration": [],
+  };
   const scopesFor = (path) =>
     SCOPES_BY_PREFIX[path.slice(0, 2).join(".")] ?? SCOPES_BY_NAMESPACE[path[0]];
 
@@ -250,7 +314,8 @@ export function buildFigmaPayload({
             : cssColorToRgba(t.value),
       });
       ids.set(`{color.${t.path.slice(1).join(".")}}`, varId);
-      // dimension（space.page.block 等）はモードがドット区切りのパスで引く
+      // dimension（space.page.block 等）はモードがドット区切りのパスで引く。
+      // プリミティブの段（font-size.18 等）はセマンティックの別名先として引く
       pathIds?.set(t.path.join("."), varId);
     }
     return ids;
@@ -347,9 +412,11 @@ export function buildFigmaPayload({
   const semCol = planCollection("Semantic", false);
   const primitiveVarIds = planVariables(primitives, primCol);
   const semanticVarIds = planVariables(semantics, semCol, primitiveVarIds);
-  // 役割トークン（radius/* text/* と ADR 0027 の space/* size/*・§10-8 の font/weight/*）は
-  // Semantic コレクションの FLOAT 変数
+  // 数値のプリミティブ（font-size/* font-weight/* space-scale/* duration/*）は Primitives の FLOAT 変数。
+  // 役割トークン（radius/* text/* と ADR 0027 の space/* size/*・§10-8 の font/weight/*・§10-9 の
+  // motion/duration/*）は Semantic コレクションの FLOAT 変数で、プリミティブを参照するものは別名にする
   const dimensionVarIds = new Map();
+  planVariables(scalePrimitives, primCol, undefined, dimensionVarIds);
   planVariables(dimensions, semCol, undefined, dimensionVarIds);
 
   planDefaultModeName(primCol);
@@ -364,6 +431,8 @@ export function buildFigmaPayload({
       variablesCreated: payload.variables.length,
       valuesSet: payload.variableModeValues.length,
       modeNames: modes.map((m) => m.name),
+      // Figma の変数で表せないので写さなかったトークン（FIGMA_UNSUPPORTED_TYPES）
+      skipped,
     },
   };
 }

@@ -1,0 +1,476 @@
+{
+  "motion": {
+    "$description": "動きの用途トークン（25_design-system.md §10-9）。時間は用途で 4 段（部品の小さい動き 100 / 色の変化 150 / 面の出入り 250 / 画面全体 400）、イージングは作業画面用の productive と宣伝・初回体験用の expressive の 2 系統（IBM Carbon の考え方）、画面遷移などの組み合わせは transition にまとめる。値はすべてプリミティブ（duration.* / easing.*）への参照。★ prefers-reduced-motion: reduce のときは、動き（位置・大きさ・回転・ループ）の変数を tokens.css が 0ms に上書きする。色・不透明度の変化（motion.duration.feedback・150ms 以下）だけが残る。どちらに属するかは各トークンの $extensions[\"com.edgescrum.reduced-motion\"]（remove = 0ms にする / keep = 残す）が正",
+    "duration": {
+      "$description": "時間の用途。小さく局所的な変化ほど短く、画面全体の構造の変化ほど長くする",
+      "state-change": {
+        "$type": "duration",
+        "$value": "{duration.100}",
+        "$description": "部品の中の小さい動き（トグルのつまみ・チェックの印・開閉の矢印）。100ms",
+        "$extensions": {
+          "com.edgescrum.usage": {
+            "purpose": "部品の小さい状態の切り替わりを目で追えるようにする",
+            "use_when": [
+              "トグルのつまみの移動・チェックの印・開閉の矢印の回転など、部品の中の小さい動き"
+            ],
+            "dont_use_when": [
+              "色・背景・枠線・フォーカスリングの変化 → motion.duration.feedback",
+              "シート・モーダル・ポップオーバーの出入り → motion.duration.surface",
+              "画面全体の切り替え → motion.duration.screen"
+            ],
+            "never": [
+              "時間を直書きしない（duration-[120ms]・transition: .2s 等）→ 用途のトークンを選ぶ",
+              "動きだけで情報を伝えない（状態は文字・アイコン・色でも示す）",
+              "prefers-reduced-motion: reduce のときに動きを残さない（この変数は 0ms になる。コンポーネント側で上書きしない）"
+            ],
+            "check": "evaluator",
+            "decided_by": "peco docs/v2/requirements/25_design-system.md §10-9"
+          },
+          "com.edgescrum.reduced-motion": "remove"
+        }
+      },
+      "feedback": {
+        "$type": "duration",
+        "$value": "{duration.150}",
+        "$description": "操作への反応としての色・背景・枠線・フォーカス・不透明度の変化。150ms。prefers-reduced-motion でも残る",
+        "$extensions": {
+          "com.edgescrum.usage": {
+            "purpose": "hover・押下・フォーカスへの反応をすぐに返す",
+            "use_when": [
+              "hover・押下・フォーカスでの色・背景・枠線・影の変化",
+              "不透明度（opacity）だけで出し入れするもの"
+            ],
+            "dont_use_when": [
+              "位置・大きさ・回転が変わる → motion.duration.state-change",
+              "シート・モーダル・ポップオーバーの出入り → motion.duration.surface"
+            ],
+            "never": [
+              "時間を直書きしない（duration-[120ms]・transition: .2s 等）→ 用途のトークンを選ぶ",
+              "150ms より長くしない（反応が遅れて見える）",
+              "位置・大きさ・回転の動きにこの時間を使わない（prefers-reduced-motion でも消えない時間のため）"
+            ],
+            "check": "evaluator",
+            "decided_by": "peco docs/v2/requirements/25_design-system.md §10-9"
+          },
+          "com.edgescrum.reduced-motion": "keep"
+        }
+      },
+      "surface": {
+        "$type": "duration",
+        "$value": "{duration.250}",
+        "$description": "面（ボトムシート・モーダル・ポップオーバー・メニュー）の出入り。250ms",
+        "$extensions": {
+          "com.edgescrum.usage": {
+            "purpose": "面がどこから出てどこへ消えたかを追えるようにする",
+            "use_when": [
+              "ボトムシート・モーダル・ポップオーバー・メニューの出入り"
+            ],
+            "dont_use_when": [
+              "画面全体の切り替え → motion.duration.screen",
+              "部品の中の小さい動き → motion.duration.state-change",
+              "色だけの変化 → motion.duration.feedback"
+            ],
+            "never": [
+              "時間を直書きしない（duration-[120ms]・transition: .2s 等）→ 用途のトークンを選ぶ",
+              "出るときと消えるときで別の時間を作らない（どちらも 250ms）",
+              "prefers-reduced-motion: reduce のときに動きを残さない（この変数は 0ms になる。コンポーネント側で上書きしない）"
+            ],
+            "check": "evaluator",
+            "decided_by": "peco docs/v2/requirements/25_design-system.md §10-9"
+          },
+          "com.edgescrum.reduced-motion": "remove"
+        }
+      },
+      "screen": {
+        "$type": "duration",
+        "$value": "{duration.400}",
+        "$description": "画面全体の切り替え（進む・戻る）。400ms",
+        "$extensions": {
+          "com.edgescrum.usage": {
+            "purpose": "画面が進んだか戻ったかを動きの向きで伝える",
+            "use_when": [
+              "画面遷移（一覧から詳細へ進む・前の画面へ戻る）"
+            ],
+            "dont_use_when": [
+              "面の出入り → motion.duration.surface",
+              "タブの切り替え → motion.transition.tab-switch"
+            ],
+            "never": [
+              "時間を直書きしない（duration-[120ms]・transition: .2s 等）→ 用途のトークンを選ぶ",
+              "400ms より長い遷移を作らない",
+              "読み込みの待ち時間を遷移の動きでごまかさない（待ちは読み込みの表示で示す）",
+              "prefers-reduced-motion: reduce のときに動きを残さない（この変数は 0ms になる。コンポーネント側で上書きしない）"
+            ],
+            "check": "evaluator",
+            "decided_by": "peco docs/v2/requirements/25_design-system.md §10-9"
+          },
+          "com.edgescrum.reduced-motion": "remove"
+        }
+      }
+    },
+    "productive": {
+      "$description": "作業画面（管理画面・お客さまの予約や設定の画面）のイージング。控えめで速く、目立たせない（Carbon productive）",
+      "standard": {
+        "$type": "cubicBezier",
+        "$value": "{easing.productive.standard}",
+        "$description": "作業画面で画面内に留まる要素が動くときの曲線（Carbon productive standard）",
+        "$extensions": {
+          "com.edgescrum.usage": {
+            "purpose": "作業画面で画面内に留まる要素が動くときの動きを控えめにそろえる",
+            "use_when": [
+              "位置や大きさが変わって画面に留まる要素（タブの下線・開閉する領域）",
+              "画面遷移（進む・戻る）"
+            ],
+            "dont_use_when": [
+              "入ってくる要素 → motion.productive.enter",
+              "出ていく要素 → motion.productive.exit",
+              "宣伝ページ（LP）・初回体験の演出 → motion.expressive.standard"
+            ],
+            "never": [
+              "イージングを直書きしない（ease-in-out・cubic-bezier(…) 等）→ 用途のトークンを選ぶ",
+              "跳ねる・行き過ぎて戻る曲線（オーバーシュート）を作らない",
+              "作業画面で expressive の曲線に差し替えない"
+            ],
+            "check": "evaluator",
+            "decided_by": "peco docs/v2/requirements/25_design-system.md §10-9"
+          }
+        }
+      },
+      "enter": {
+        "$type": "cubicBezier",
+        "$value": "{easing.productive.entrance}",
+        "$description": "作業画面で入ってくる要素を減速させて止めるときの曲線（Carbon productive entrance）",
+        "$extensions": {
+          "com.edgescrum.usage": {
+            "purpose": "作業画面で入ってくる要素を減速させて止めるときの動きを控えめにそろえる",
+            "use_when": [
+              "画面の外や下から入ってくる面（ボトムシート・モーダル・ポップオーバー）"
+            ],
+            "dont_use_when": [
+              "出ていく要素 → motion.productive.exit",
+              "画面に留まる要素 → motion.productive.standard",
+              "宣伝ページ（LP）・初回体験の演出 → motion.expressive.enter"
+            ],
+            "never": [
+              "イージングを直書きしない（ease-in-out・cubic-bezier(…) 等）→ 用途のトークンを選ぶ",
+              "跳ねる・行き過ぎて戻る曲線（オーバーシュート）を作らない",
+              "作業画面で expressive の曲線に差し替えない"
+            ],
+            "check": "evaluator",
+            "decided_by": "peco docs/v2/requirements/25_design-system.md §10-9"
+          }
+        }
+      },
+      "exit": {
+        "$type": "cubicBezier",
+        "$value": "{easing.productive.exit}",
+        "$description": "作業画面で出ていく要素を加速させて消すときの曲線（Carbon productive exit）",
+        "$extensions": {
+          "com.edgescrum.usage": {
+            "purpose": "作業画面で出ていく要素を加速させて消すときの動きを控えめにそろえる",
+            "use_when": [
+              "画面の外へ出ていく面（ボトムシート・モーダル・ポップオーバー）"
+            ],
+            "dont_use_when": [
+              "入ってくる要素 → motion.productive.enter",
+              "画面に留まる要素 → motion.productive.standard",
+              "宣伝ページ（LP）・初回体験の演出 → motion.expressive.exit"
+            ],
+            "never": [
+              "イージングを直書きしない（ease-in-out・cubic-bezier(…) 等）→ 用途のトークンを選ぶ",
+              "跳ねる・行き過ぎて戻る曲線（オーバーシュート）を作らない",
+              "作業画面で expressive の曲線に差し替えない"
+            ],
+            "check": "evaluator",
+            "decided_by": "peco docs/v2/requirements/25_design-system.md §10-9"
+          }
+        }
+      }
+    },
+    "expressive": {
+      "$description": "宣伝ページ（LP）と初回体験（オンボーディング）だけのイージング。大きく目を引く（Carbon expressive）。作業画面では使わない",
+      "standard": {
+        "$type": "cubicBezier",
+        "$value": "{easing.expressive.standard}",
+        "$description": "宣伝ページ・初回体験で画面内に留まる要素が動くときの曲線（Carbon expressive standard）。作業画面では使わない",
+        "$extensions": {
+          "com.edgescrum.usage": {
+            "purpose": "宣伝ページ・初回体験の演出で画面内に留まる要素が動くときの動きに印象を付ける",
+            "use_when": [
+              "宣伝ページ（LP）・オンボーディングの演出の中で、位置や大きさが変わって画面に留まる要素（タブの下線・開閉する領域）"
+            ],
+            "dont_use_when": [
+              "管理画面・予約・設定などの作業画面 → motion.productive.standard",
+              "入ってくる要素 → motion.expressive.enter",
+              "出ていく要素 → motion.expressive.exit"
+            ],
+            "never": [
+              "作業画面（管理画面・お客さまの予約・設定）で expressive を使わない",
+              "イージングを直書きしない（ease-in-out・cubic-bezier(…) 等）→ 用途のトークンを選ぶ",
+              "視界の端で動かし続けない（ループする装飾の動きを作らない）"
+            ],
+            "check": "evaluator",
+            "decided_by": "peco docs/v2/requirements/25_design-system.md §10-9"
+          }
+        }
+      },
+      "enter": {
+        "$type": "cubicBezier",
+        "$value": "{easing.expressive.entrance}",
+        "$description": "宣伝ページ・初回体験で入ってくる要素を減速させて止めるときの曲線（Carbon expressive entrance）。作業画面では使わない",
+        "$extensions": {
+          "com.edgescrum.usage": {
+            "purpose": "宣伝ページ・初回体験の演出で入ってくる要素を減速させて止めるときの動きに印象を付ける",
+            "use_when": [
+              "宣伝ページ（LP）・オンボーディングの演出の中で、画面の外や下から入ってくる面（ボトムシート・モーダル・ポップオーバー）"
+            ],
+            "dont_use_when": [
+              "管理画面・予約・設定などの作業画面 → motion.productive.enter",
+              "出ていく要素 → motion.expressive.exit",
+              "画面に留まる要素 → motion.expressive.standard"
+            ],
+            "never": [
+              "作業画面（管理画面・お客さまの予約・設定）で expressive を使わない",
+              "イージングを直書きしない（ease-in-out・cubic-bezier(…) 等）→ 用途のトークンを選ぶ",
+              "視界の端で動かし続けない（ループする装飾の動きを作らない）"
+            ],
+            "check": "evaluator",
+            "decided_by": "peco docs/v2/requirements/25_design-system.md §10-9"
+          }
+        }
+      },
+      "exit": {
+        "$type": "cubicBezier",
+        "$value": "{easing.expressive.exit}",
+        "$description": "宣伝ページ・初回体験で出ていく要素を加速させて消すときの曲線（Carbon expressive exit）。作業画面では使わない",
+        "$extensions": {
+          "com.edgescrum.usage": {
+            "purpose": "宣伝ページ・初回体験の演出で出ていく要素を加速させて消すときの動きに印象を付ける",
+            "use_when": [
+              "宣伝ページ（LP）・オンボーディングの演出の中で、画面の外へ出ていく面（ボトムシート・モーダル・ポップオーバー）"
+            ],
+            "dont_use_when": [
+              "管理画面・予約・設定などの作業画面 → motion.productive.exit",
+              "入ってくる要素 → motion.expressive.enter",
+              "画面に留まる要素 → motion.expressive.standard"
+            ],
+            "never": [
+              "作業画面（管理画面・お客さまの予約・設定）で expressive を使わない",
+              "イージングを直書きしない（ease-in-out・cubic-bezier(…) 等）→ 用途のトークンを選ぶ",
+              "視界の端で動かし続けない（ループする装飾の動きを作らない）"
+            ],
+            "check": "evaluator",
+            "decided_by": "peco docs/v2/requirements/25_design-system.md §10-9"
+          }
+        }
+      }
+    },
+    "transition": {
+      "$description": "よく使う動きの組み合わせ（DTCG transition: duration + delay + timingFunction）。tokens.css では `<時間> <イージング> <遅延>` の 1 行に展開され、`transition: transform var(--motion-transition-sheet-enter)` のように動かすプロパティを前に付けて使う",
+      "page-forward": {
+        "$type": "transition",
+        "$value": {
+          "duration": "{motion.duration.screen}",
+          "delay": "{duration.0}",
+          "timingFunction": "{motion.productive.standard}"
+        },
+        "$description": "次の画面へ進む遷移（400ms・productive standard）",
+        "$extensions": {
+          "com.edgescrum.usage": {
+            "purpose": "次の画面へ進んだことを動きの向きで伝える",
+            "use_when": [
+              "一覧から詳細へ・手順の次へ進む画面遷移"
+            ],
+            "dont_use_when": [
+              "前の画面へ戻る → motion.transition.page-back",
+              "タブの切り替え → motion.transition.tab-switch",
+              "シート・モーダルを開く → motion.transition.sheet-enter / motion.transition.modal-enter"
+            ],
+            "never": [
+              "時間やイージングを直書きしない（transition: .3s ease 等）→ このトークンを使う",
+              "prefers-reduced-motion: reduce のときに動きを残さない（この変数は 0ms になる。コンポーネント側で上書きしない）",
+              "画面遷移に expressive の曲線を使わない"
+            ],
+            "check": "evaluator",
+            "decided_by": "peco docs/v2/requirements/25_design-system.md §10-9"
+          },
+          "com.edgescrum.reduced-motion": "remove"
+        }
+      },
+      "page-back": {
+        "$type": "transition",
+        "$value": {
+          "duration": "{motion.duration.screen}",
+          "delay": "{duration.0}",
+          "timingFunction": "{motion.productive.standard}"
+        },
+        "$description": "前の画面へ戻る遷移（400ms・productive standard。向きは page-forward の逆）",
+        "$extensions": {
+          "com.edgescrum.usage": {
+            "purpose": "前の画面へ戻ったことを動きの向きで伝える",
+            "use_when": [
+              "戻る操作・手順の前へ戻る画面遷移"
+            ],
+            "dont_use_when": [
+              "次の画面へ進む → motion.transition.page-forward",
+              "シート・モーダルを閉じる → motion.transition.sheet-exit / motion.transition.modal-exit"
+            ],
+            "never": [
+              "時間やイージングを直書きしない（transition: .3s ease 等）→ このトークンを使う",
+              "prefers-reduced-motion: reduce のときに動きを残さない（この変数は 0ms になる。コンポーネント側で上書きしない）",
+              "進むと同じ向きに動かさない（向きで進む・戻るを区別する）"
+            ],
+            "check": "evaluator",
+            "decided_by": "peco docs/v2/requirements/25_design-system.md §10-9"
+          },
+          "com.edgescrum.reduced-motion": "remove"
+        }
+      },
+      "sheet-enter": {
+        "$type": "transition",
+        "$value": {
+          "duration": "{motion.duration.surface}",
+          "delay": "{duration.0}",
+          "timingFunction": "{motion.productive.enter}"
+        },
+        "$description": "ボトムシートが入る（250ms・productive enter）",
+        "$extensions": {
+          "com.edgescrum.usage": {
+            "purpose": "ボトムシートがどこから出てきたかを追えるようにする",
+            "use_when": [
+              "ボトムシート・ドロワーが画面の端から入るとき"
+            ],
+            "dont_use_when": [
+              "ボトムシートが出ていく → motion.transition.sheet-exit",
+              "画面中央のモーダル → motion.transition.modal-enter"
+            ],
+            "never": [
+              "時間やイージングを直書きしない（transition: .3s ease 等）→ このトークンを使う",
+              "prefers-reduced-motion: reduce のときに動きを残さない（この変数は 0ms になる。コンポーネント側で上書きしない）",
+              "面の中身を時間差で 1 つずつ出さない（面全体を 1 回で動かす）"
+            ],
+            "check": "evaluator",
+            "decided_by": "peco docs/v2/requirements/25_design-system.md §10-9"
+          },
+          "com.edgescrum.reduced-motion": "remove"
+        }
+      },
+      "sheet-exit": {
+        "$type": "transition",
+        "$value": {
+          "duration": "{motion.duration.surface}",
+          "delay": "{duration.0}",
+          "timingFunction": "{motion.productive.exit}"
+        },
+        "$description": "ボトムシートが出ていく（250ms・productive exit）",
+        "$extensions": {
+          "com.edgescrum.usage": {
+            "purpose": "ボトムシートがどこへ消えたかを追えるようにする",
+            "use_when": [
+              "ボトムシート・ドロワーが画面の端へ出ていくとき"
+            ],
+            "dont_use_when": [
+              "ボトムシートが入る → motion.transition.sheet-enter",
+              "画面中央のモーダル → motion.transition.modal-exit"
+            ],
+            "never": [
+              "時間やイージングを直書きしない（transition: .3s ease 等）→ このトークンを使う",
+              "prefers-reduced-motion: reduce のときに動きを残さない（この変数は 0ms になる。コンポーネント側で上書きしない）",
+              "閉じる動きの終わりを待ってから次の操作を受け付ける作りにしない"
+            ],
+            "check": "evaluator",
+            "decided_by": "peco docs/v2/requirements/25_design-system.md §10-9"
+          },
+          "com.edgescrum.reduced-motion": "remove"
+        }
+      },
+      "modal-enter": {
+        "$type": "transition",
+        "$value": {
+          "duration": "{motion.duration.surface}",
+          "delay": "{duration.0}",
+          "timingFunction": "{motion.productive.enter}"
+        },
+        "$description": "モーダル・ポップオーバーが現れる（250ms・productive enter）",
+        "$extensions": {
+          "com.edgescrum.usage": {
+            "purpose": "モーダルが現れたことを、作業の流れを止めずに伝える",
+            "use_when": [
+              "モーダル・ダイアログ・ポップオーバーが現れるとき"
+            ],
+            "dont_use_when": [
+              "モーダルが消える → motion.transition.modal-exit",
+              "画面の端から入るシート → motion.transition.sheet-enter"
+            ],
+            "never": [
+              "時間やイージングを直書きしない（transition: .3s ease 等）→ このトークンを使う",
+              "prefers-reduced-motion: reduce のときに動きを残さない（この変数は 0ms になる。コンポーネント側で上書きしない）",
+              "モーダルを大きく拡大・回転させて出さない"
+            ],
+            "check": "evaluator",
+            "decided_by": "peco docs/v2/requirements/25_design-system.md §10-9"
+          },
+          "com.edgescrum.reduced-motion": "remove"
+        }
+      },
+      "modal-exit": {
+        "$type": "transition",
+        "$value": {
+          "duration": "{motion.duration.surface}",
+          "delay": "{duration.0}",
+          "timingFunction": "{motion.productive.exit}"
+        },
+        "$description": "モーダル・ポップオーバーが消える（250ms・productive exit）",
+        "$extensions": {
+          "com.edgescrum.usage": {
+            "purpose": "モーダルが閉じたことを、作業の流れを止めずに伝える",
+            "use_when": [
+              "モーダル・ダイアログ・ポップオーバーが消えるとき"
+            ],
+            "dont_use_when": [
+              "モーダルが現れる → motion.transition.modal-enter",
+              "画面の端へ出ていくシート → motion.transition.sheet-exit"
+            ],
+            "never": [
+              "時間やイージングを直書きしない（transition: .3s ease 等）→ このトークンを使う",
+              "prefers-reduced-motion: reduce のときに動きを残さない（この変数は 0ms になる。コンポーネント側で上書きしない）",
+              "閉じる動きの終わりを待ってから次の操作を受け付ける作りにしない"
+            ],
+            "check": "evaluator",
+            "decided_by": "peco docs/v2/requirements/25_design-system.md §10-9"
+          },
+          "com.edgescrum.reduced-motion": "remove"
+        }
+      },
+      "tab-switch": {
+        "$type": "transition",
+        "$value": {
+          "duration": "{motion.duration.feedback}",
+          "delay": "{duration.0}",
+          "timingFunction": "{motion.productive.standard}"
+        },
+        "$description": "タブの切り替え（選択の下線の移動と中身の入れ替え。150ms・productive standard）",
+        "$extensions": {
+          "com.edgescrum.usage": {
+            "purpose": "どのタブに切り替わったかを素早く示す",
+            "use_when": [
+              "タブ・セグメントの選択の下線の移動と中身の入れ替え"
+            ],
+            "dont_use_when": [
+              "画面全体の切り替え → motion.transition.page-forward",
+              "色だけの変化 → motion.duration.feedback"
+            ],
+            "never": [
+              "時間やイージングを直書きしない（transition: .3s ease 等）→ このトークンを使う",
+              "prefers-reduced-motion: reduce のときに動きを残さない（この変数は 0ms になる。コンポーネント側で上書きしない）",
+              "タブの中身を横に滑らせて入れ替えない（画面遷移と見分けがつかなくなる）"
+            ],
+            "check": "evaluator",
+            "decided_by": "peco docs/v2/requirements/25_design-system.md §10-9"
+          },
+          "com.edgescrum.reduced-motion": "remove"
+        }
+      }
+    }
+  }
+}

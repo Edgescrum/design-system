@@ -280,6 +280,8 @@ export function toYaml(value, indent = 0) {
     if (val && typeof val === "object" && !Array.isArray(val)) {
       lines.push(`${pad}${k}:`);
       lines.push(toYaml(val, indent + 2));
+    } else if (Array.isArray(val)) {
+      throw new Error(`YAML に書けない値（配列）: ${key} = ${JSON.stringify(val)}`);
     } else if (typeof val === "number") {
       lines.push(`${pad}${k}: ${val}`);
     } else if (typeof val === "string") {
@@ -302,6 +304,9 @@ function resolveRef(tree, value) {
   if (!("$value" in node)) throw new Error(`参照先がトークンではありません: ${value}`);
   return resolveRef(tree, node.$value);
 }
+
+/** DTCG cubicBezier（[x1, y1, x2, y2]）→ CSS。Style Dictionary の cubicBezier/css と同じ綴り。 */
+const cubicBezierCss = (v) => (Array.isArray(v) ? `cubic-bezier(${v.join(", ")})` : v);
 
 /** DTCG の木を歩いて (path[], token) を返す。 */
 function* walk(node, path = []) {
@@ -358,9 +363,33 @@ function assertNoFlatCollision(section, tree) {
  * | `radius.*` | `rounded.*` | |
  * | `space.*` | `spacing.*` | ページ余白（`spacing.page.*`）と用途の 3 種 |
  * | `size.content.*` | `spacing.content.*` | 本文の最大幅 |
+ * | `font-size.*`（プリミティブ） | `typography.scale.size.<px>.fontSize` | 参照用の生の段。本文の Never でアプリからの直接使用を禁じる |
+ * | `font-weight.*`（プリミティブ） | `typography.scale.weight.<n>.fontWeight` | 同上 |
+ * | `space-scale.*`（プリミティブ） | `spacing.scale.<px>` | 同上 |
+ * | `motion.duration.*` | `motion.duration-<名前>.duration` | 仕様の Motion（`duration` / `delay` / `timingFunction`）。仕様上 motion は平らな map なので `-` で連結する |
+ * | `motion.productive.*` / `motion.expressive.*` | `motion.<系統>-<名前>.timingFunction` | `cubic-bezier(…)` に展開 |
+ * | `motion.transition.*` | `motion.transition-<名前>` | `duration` / `delay` / `timingFunction` の 3 つ |
+ *
+ * ★ 時間・イージングのプリミティブ（`duration.*` / `easing.*`）は載せない。仕様の `motion` は
+ *   「用途の名前（state-change / surface-enter 等）で引く」もので、生の速さの段を並べる場所ではないため。
+ *   色のプリミティブを載せないのと同じ扱い。
  */
-export function buildFoundationTokens({ semanticJson, primitivesJson, dimensionJson, typographyJson }) {
-  const tree = { ...semanticJson, ...primitivesJson, ...dimensionJson, ...typographyJson };
+export function buildFoundationTokens({
+  semanticJson,
+  primitivesJson,
+  dimensionJson,
+  typographyJson,
+  scalePrimitivesJson = {},
+  motionJson = {},
+}) {
+  const tree = {
+    ...semanticJson,
+    ...primitivesJson,
+    ...dimensionJson,
+    ...typographyJson,
+    ...scalePrimitivesJson,
+    ...motionJson,
+  };
   const colors = {};
   for (const [path, token] of walk(semanticJson)) {
     put(colors, path, resolveRef(tree, token.$value), "colors");
@@ -381,6 +410,13 @@ export function buildFoundationTokens({ semanticJson, primitivesJson, dimensionJ
       put(typography, ["family", ...path], { fontFamily: [].concat(token.$value).map((f) => (f.includes(" ") ? `'${f}'` : f)).join(", ") }, "typography");
     }
   }
+  // プリミティブの段（参照用。DESIGN.md 本文の Never で直接使用を禁じる）
+  for (const [path, token] of walk(scalePrimitivesJson["font-size"] ?? {})) {
+    put(typography, ["scale", "size", ...path], { fontSize: resolveRef(tree, token.$value) }, "typography");
+  }
+  for (const [path, token] of walk(scalePrimitivesJson["font-weight"] ?? {})) {
+    put(typography, ["scale", "weight", ...path], { fontWeight: resolveRef(tree, token.$value) }, "typography");
+  }
   const rounded = {};
   for (const [path, token] of walk(dimensionJson.radius ?? {})) {
     put(rounded, path, resolveRef(tree, token.$value), "rounded");
@@ -392,10 +428,36 @@ export function buildFoundationTokens({ semanticJson, primitivesJson, dimensionJ
   for (const [path, token] of walk(dimensionJson.size ?? {})) {
     put(spacing, path, resolveRef(tree, token.$value), "spacing");
   }
+  for (const [path, token] of walk(scalePrimitivesJson["space-scale"] ?? {})) {
+    put(spacing, ["scale", ...path], resolveRef(tree, token.$value), "spacing");
+  }
+  const motion = {};
+  for (const [path, token] of walk(motionJson.motion ?? {})) {
+    const name = path.join("-");
+    if (token.$type === "duration") {
+      put(motion, [name], { duration: resolveRef(tree, token.$value) }, "motion");
+    } else if (token.$type === "cubicBezier") {
+      put(motion, [name], { timingFunction: cubicBezierCss(resolveRef(tree, token.$value)) }, "motion");
+    } else if (token.$type === "transition") {
+      const v = token.$value;
+      put(
+        motion,
+        [name],
+        {
+          duration: resolveRef(tree, v.duration),
+          delay: resolveRef(tree, v.delay),
+          timingFunction: cubicBezierCss(resolveRef(tree, v.timingFunction)),
+        },
+        "motion"
+      );
+    } else {
+      throw new Error(`motion: ${path.join(".")} の $type ${token.$type} を DESIGN.md に写せない`);
+    }
+  }
   for (const [name, section] of Object.entries({ colors, typography, rounded, spacing })) {
     assertNoFlatCollision(name, section);
   }
-  return { colors, typography, rounded, spacing };
+  return { colors, typography, rounded, spacing, motion };
 }
 
 /** frontmatter の文字列（`---` で挟んだもの）を作る。 */
@@ -430,6 +492,12 @@ export async function foundationTokens(dir = FOUNDATION_DIR) {
     primitivesJson: await t("color.primitives.json"),
     dimensionJson: await t("dimension.json"),
     typographyJson: await t("typography.json"),
+    scalePrimitivesJson: {
+      ...(await t("typography.primitives.json")),
+      ...(await t("space.primitives.json")),
+      ...(await t("motion.primitives.json")),
+    },
+    motionJson: await t("motion.json"),
   });
 }
 
