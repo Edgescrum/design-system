@@ -288,6 +288,76 @@ await check("verify:centered-notice — content 未指定なら出力が変わ�
   assert(iDesc >= 0 && iSlot > iDesc && iNote > iSlot && iAct > iNote, `順序が description → content → note → actions でない: ${out}`);
 });
 
+// ── 4b. 重ねる面と結果の箱（#56）— 既存の呼び出しの DOM を動かさない ──────────────────
+// peco は Modal を 33 箇所（うち position="bottom" 9 箇所）、Alert を 50 ファイルで使う。
+// #56 で Modal を BottomSheet と共有する枠（dialog-frame）に載せ替え、Alert に押せる行を足した。
+// 期待値は載せ替え前（main caa1b82）の dist をサーバー描画した文字列そのもの。
+console.log("dialogs and alerts (#56)");
+
+await check("verify:modal — 枠の共有後も DOM は従来と 1 バイトも変わらない（center / bottom / labelledby / presentation）", async () => {
+  needDist();
+  const noop = () => {};
+  eq(
+    html(h(ui.Modal, { open: true, onClose: noop, ariaLabel: "確認" }, "X")),
+    '<div class="fixed inset-0 z-50 flex bg-black/40 p-4 items-center justify-center"><div role="dialog" aria-modal="true" aria-label="確認" tabindex="-1" class="w-full max-w-sm rounded-2xl bg-card p-6 shadow-xl outline-none ">X</div></div>',
+    "Modal（center）"
+  );
+  eq(
+    html(h(ui.Modal, { open: true, onClose: noop, ariaLabel: "確認", position: "bottom" }, "X")),
+    '<div class="fixed inset-0 z-50 flex bg-black/40 p-4 items-center justify-center"><div role="dialog" aria-modal="true" aria-label="確認" tabindex="-1" class="w-full max-w-sm rounded-2xl bg-card p-6 shadow-xl outline-none max-h-[90vh] overflow-y-auto overscroll-contain">X</div></div>',
+    "Modal（position=bottom は中央のまま）"
+  );
+  eq(
+    html(h(ui.Modal, { open: true, onClose: noop, ariaLabelledBy: "t", maxWidth: "max-w-md", padding: "p-5" }, "X")),
+    '<div class="fixed inset-0 z-50 flex bg-black/40 p-4 items-center justify-center"><div role="dialog" aria-modal="true" aria-labelledby="t" tabindex="-1" class="w-full max-w-md rounded-2xl bg-card p-5 shadow-xl outline-none ">X</div></div>',
+    "Modal（ariaLabelledBy / maxWidth / padding）"
+  );
+  eq(
+    html(h(ui.Modal, { open: true, onClose: noop, role: "presentation" }, "X")),
+    '<div class="fixed inset-0 z-50 flex bg-black/40 p-4 items-center justify-center"><div role="presentation" class="w-full max-w-sm rounded-2xl bg-card p-6 shadow-xl outline-none ">X</div></div>',
+    "Modal（role=presentation）"
+  );
+  eq(html(h(ui.Modal, { open: false, onClose: noop, ariaLabel: "確認" }, "X")), "", "Modal（閉じている）");
+});
+
+await check("verify:alert — href / onClick を渡さない Alert の DOM は従来と 1 バイトも変わらない", async () => {
+  needDist();
+  eq(
+    html(h(ui.Alert, { type: "error" }, "登録に失敗しました")),
+    '<div role="alert" class="rounded-xl px-4 py-3 text-sm bg-red-50 text-red-600">登録に失敗しました</div>',
+    "Alert（error）"
+  );
+  eq(
+    html(h(ui.Alert, { type: "success", "data-testid": "r" }, "保存しました")),
+    '<div role="status" class="rounded-xl px-4 py-3 text-sm bg-green-50 text-green-600" data-testid="r">保存しました</div>',
+    "Alert（success + data-testid）"
+  );
+  eq(
+    html(h(ui.Alert, { type: "warning" }, "この操作は取り消せません")),
+    '<div role="status" class="rounded-xl px-4 py-3 text-sm bg-warning-bg text-warning">この操作は取り消せません</div>',
+    "Alert（warning）"
+  );
+});
+
+await check("verify:alert — 押せる行は live region の箱 1 つの中にリンク 1 つ（role はリンクに付けない）", async () => {
+  needDist();
+  const out = html(h(ui.Alert, { type: "warning", href: "/d" }, "重複の可能性があるお客さまが 3 組います"));
+  assert(/^<div role="status" class="rounded-xl text-sm bg-warning-bg text-warning"><a href="\/d" class="[^"]*">/.test(out), `箱とリンクの形が違う: ${out}`);
+  assert((out.match(/role="/g) ?? []).length === 1, `role が 2 つ以上ある（live region の入れ子・リンクの role 上書き）: ${out}`);
+  assert(out.includes('aria-hidden="true"'), `› が読み上げから外れていない: ${out}`);
+});
+
+await check("verify:bottom-sheet — サーバー描画で落ちず、下に隠れた状態（closed）で出る", async () => {
+  needDist();
+  const out = html(h(ui.BottomSheet, { open: true, onClose: () => {}, title: "2 組をまとめます" }, h("p", null, "本文")));
+  assert(out.includes('role="dialog"') && out.includes('aria-modal="true"'), `dialog になっていない: ${out}`);
+  assert(/aria-labelledby="([^"]+)"/.test(out), `名前が見出しを指していない: ${out}`);
+  const id = /aria-labelledby="([^"]+)"/.exec(out)[1];
+  assert(out.includes(`<h2 id="${id}"`), `aria-labelledby の先の見出しが無い: ${out}`);
+  assert(out.includes('data-state="closed"') && !out.includes('data-state="open"'), `サーバーでは入る動きの始点（closed）で描く: ${out}`);
+  eq(html(h(ui.BottomSheet, { open: false, onClose: () => {}, title: "x" }, "本文")), "", "BottomSheet（閉じている）");
+});
+
 // ── 5. 使い方の約束（ADR-0032 / peco 25_design-system.md §10-3〜§10-5） ─────────────
 console.log("usage contracts (ADR-0032 / §10)");
 

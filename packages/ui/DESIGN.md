@@ -21,6 +21,7 @@ description: "Edgescrum design system — core layer. Audience-agnostic React co
 ## 部品の索引
 
 - Alert — 送信の結果や、操作の前に知っておくべき注意を 1 文で知らせる → `@src/Alert.design.md`
+- BottomSheet — 画面で決めた操作の確認や 1 つの選択を、今の画面を離れずに親指の届く下端から出す → `@src/BottomSheet.design.md`
 - Button — 押すと 1 つの操作（送信・保存・確定・取り消し・開く）を実行する → `@src/Button.design.md`
 - FormField — 打って入力する欄 1 つに、タップで入力欄へ移るラベルを付けて置く → `@src/FormField.design.md`
 - InfoTip — 補足 1 文に入らない説明を、ラベル横の i マークを押したときだけ出す → `@src/InfoTip.design.md`

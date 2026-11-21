@@ -1,0 +1,43 @@
+# BottomSheet
+
+画面の下端から出るシート（`role="dialog"`・`aria-modal`・名前は見出しの `title`）。振る舞いは Modal と同じ枠を共有する（開くとシートへフォーカス・Escape と背景タップで `onClose`・Tab はシートの中で折り返し・閉じたら呼び出し元へ戻す）。見出しは部品が描き、ボタン・閉じる ×・取っ手は描かない。入る / 出るは `motion.transition.sheet-enter` / `sheet-exit`。
+
+- purpose: 画面で決めた操作の確認や 1 つの選択を、今の画面を離れずに親指の届く下端から出す
+- use_when:
+  - 要件・Figma で「下から」と決めた確認（まとめる・取り消せない操作の最後の確認）
+  - 一覧の 1 件の詳細を、一覧を離れずに下から出して見せる（比較・その件への操作 1〜2 個）
+  - 決まった候補から 1 つを選んで確定する短い選択（残す予約を選ぶ）
+- dont_use_when:
+  - 既存のモーダルを下から出す見た目に変えたい → Modal のまま（2026-08-16 の運用者 FB で中央に統一。下から出すのは画面ごとに Figma で決めたものだけ）
+  - 確認の形が Figma で決まっていない・中央に出す確認 → Modal
+  - 結果を知らせるだけで、押すものが「閉じる」しか無い → Alert（`type="success"`）をページに出す
+  - 補足 1 文に入らない説明を見せたい → ラベル横の InfoTip
+  - 入力が多いフォーム・何段もの手順 → 別のページに分ける（peco のシェル FocusShell・peco 25_design-system.md §9-11）
+  - 失敗の理由を出す → 呼び出し元のページに Alert（`type="error"`）を出し、シートは開かない
+- never:
+  - 下から出るシートを作り直さない（`@edgescrum/ds-core` の BottomSheet を import する）
+  - Modal に className を足して下端に貼り付けない・`items-end` の暗転面を手で書かない
+  - 手書きの portal・Escape やフォーカストラップの写経を書かない
+  - 見出しを `title` 以外で描かない（中身に h2 を足さない。名前と見た目の見出しがずれる）
+  - 破壊的操作の確認で `onClose` に実行を渡さない（Escape・背景タップは取り消し）
+  - 送信中に閉じられるままにしない（送信中は `onClose` に何もしない関数を渡す）
+  - 操作行（送信・取り消し）を SheetActions の外に置かない
+  - 取り消せない操作の注意を見出しの下の説明に混ぜない（確定ボタンの直前に 1 文で置く）
+  - 閉じる動きが終わるのを待ってから次の操作をさせない（閉じた瞬間にフォーカスは戻る）
+  - 開閉の動き・角丸・余白・幅・影を className や style で変えない
+  - 動きを減らす設定で位置の動きを残さない（透明度と暗転面の色の変化だけが残る）
+  - シートの中から別のシート・モーダルを重ねて開かない（閉じてから開く）
+  - 見出しとボタンのラベルを 16 字を超えて書かない
+  - 説明を 1 文・40 字を超えて書かない。PC だけに出す説明でも 2 文・80 字まで
+  - 説明に括弧書きで例外・件数を足さない
+- limits:
+  - heading_chars: 16
+  - button_chars: 16
+  - description: 1文・40字・括弧なし
+  - description_pc_only: 2文・80字
+  - actions: 2 個まで（取り消し + 確定、または閉じる + その件への操作 1 つ）
+  - width: スマホは画面幅・広い画面は size.content.flow-compact
+  - height: 画面の 9 割まで（超えたらシートの中をスクロール）
+  - motion: motion.transition.sheet-enter / sheet-exit（250ms・productive enter / exit）。動きを減らす設定では透明度と色だけ（motion.duration.feedback）
+- check: evaluator
+- decided_by: peco docs/v2/requirements/27_pending-customer-claim-and-merge.md §7（確認シートは下から）・peco 25_design-system.md §10-8 / §10-9 / §10-10・Edgescrum/design-system #56・peco #1994 / #2212（ダイアログの振る舞い）・docs/adr/0032-ai-readable-usage-contracts-live-next-to-tokens-and-parts.md

@@ -14,6 +14,7 @@
   - 押した瞬間に反映してよい設定 → Toggle
   - 決まった選択肢から 1 つ選ぶだけ → SelectDropdown
   - 失敗の理由を出す → 呼び出し元のページに Alert（`type="error"`）を出し、モーダルは開かない
+  - 要件・Figma で「下から」と決めた確認・選択 → BottomSheet（`position="bottom"` は中央に出る）
 - never:
   - ダイアログを作り直さない（`@edgescrum/ds-core` の Modal を import する）
   - 手書きの portal・`fixed inset-0` の暗転面・Escape やフォーカストラップの写経を書かない
@@ -23,7 +24,8 @@
   - 破壊的操作の確認で `onClose` に実行を渡さない（Escape・背景タップは取り消し）
   - 送信中に閉じられるままにしない（送信中は `onClose` に何もしない関数を渡す）
   - 入力欄のあるモーダルの操作行を SheetActions の外に置かない
-  - 画面の下端に貼り付く見た目を className で作らない（`position="bottom"` も中央に出る）
+  - 画面の下端に貼り付く見た目を className で作らない（`position="bottom"` も中央に出る。下から出すなら BottomSheet）
+  - `position="bottom"` を「下から出す」つもりで新しく使わない（中央に出る下位互換の値。高さ上限とスクロールだけが付く）
   - 開閉の動きを呼び出し側で書かない。動かすなら部品に `motion.transition.modal-enter` / `modal-exit`（250ms・productive）を入れる
   - 動きを減らす設定で位置・大きさの動きを残さない（透明度の変化だけ残す）
   - expressive のイージング・`motion.duration.feedback` を開閉の動きに使わない
@@ -38,4 +40,4 @@
   - description_in_disclosure: 3文まで
   - motion: motion.transition.modal-enter / modal-exit（250ms・productive enter / exit）
 - check: evaluator
-- decided_by: peco docs/v2/requirements/25_design-system.md §10-2 / §10-8 / §10-9・peco #685 / #1994（dialog が既定）・peco #2212（Escape・フォーカス）・peco #2038 / #1964（失敗時はモーダルを開かない）・docs/adr/0032-ai-readable-usage-contracts-live-next-to-tokens-and-parts.md
+- decided_by: peco docs/v2/requirements/25_design-system.md §10-2 / §10-8 / §10-9・peco #685 / #1994（dialog が既定）・peco #2212（Escape・フォーカス）・Edgescrum/design-system #56（BottomSheet と枠を共有・`position="bottom"` の見た目は変えない）・peco #2038 / #1964（失敗時はモーダルを開かない）・docs/adr/0032-ai-readable-usage-contracts-live-next-to-tokens-and-parts.md
