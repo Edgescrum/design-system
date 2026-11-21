@@ -16,6 +16,7 @@ export { RatingBadge, ratingToneClass } from "./RatingBadge";
 export type { RatingBadgeProps } from "./RatingBadge";
 export { Spinner } from "./Spinner";
 export { Alert } from "./Alert";
+export type { AlertProps, AlertLinkComponent } from "./Alert";
 export { PageContainer } from "./PageContainer";
 // ページの骨格（ADR 0027）。シェル自体はプロダクトが持ち、DS は部品とトークンだけを持つ
 export { PageBody } from "./PageBody";
@@ -38,6 +39,8 @@ export type { NumberFieldProps } from "./NumberField";
 export { FullScreenLoading } from "./FullScreenLoading";
 export { Modal } from "./Modal";
 export type { ModalProps } from "./Modal";
+export { BottomSheet } from "./BottomSheet";
+export type { BottomSheetProps } from "./BottomSheet";
 export { useDialogBehavior } from "./dialog-behavior";
 export { InfoTip } from "./InfoTip";
 export type { InfoTipProps } from "./InfoTip";
