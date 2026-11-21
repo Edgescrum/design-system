@@ -21,7 +21,7 @@
       "$description": "太さは 3 種類（通常 / 中太 / 太字）に絞る（25_design-system.md §10-8・2026-11-21 運用者裁定）。棚卸しで 6 種類（extrabold / black が 51 か所）あったため",
       "regular": {
         "$type": "fontWeight",
-        "$value": 400,
+        "$value": "{font-weight.400}",
         "$description": "通常（本文・補足・注記）",
         "$extensions": {
           "com.edgescrum.usage": {
@@ -45,7 +45,7 @@
       },
       "emphasis": {
         "$type": "fontWeight",
-        "$value": 600,
+        "$value": "{font-weight.600}",
         "$description": "中太（見出し・ラベル・ボタン）",
         "$extensions": {
           "com.edgescrum.usage": {
@@ -71,7 +71,7 @@
       },
       "strong": {
         "$type": "fontWeight",
-        "$value": 700,
+        "$value": "{font-weight.700}",
         "$description": "太字（数値表示・ごく短い強調）",
         "$extensions": {
           "com.edgescrum.usage": {

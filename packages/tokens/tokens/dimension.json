@@ -1,13 +1,13 @@
 {
   "text": {
     "$description": "フォントサイズの追加段。Tailwind 標準（text-xs = 12px）より小さい段への需要が実測で大きい（text-[11px] 256 回 / text-[10px] 166 回・2026-09-27 監査）。font-size のみ定義し line-height の連動トークンは持たない — 既存の text-[11px]（font-size のみ変更）からの置換で行間が変わらないようにするため。",
-    "2xs": { "$type": "dimension", "$value": "0.6875rem" },
-    "3xs": { "$type": "dimension", "$value": "0.625rem" },
+    "2xs": { "$type": "dimension", "$value": "{font-size.11}" },
+    "3xs": { "$type": "dimension", "$value": "{font-size.10}" },
     "role": {
       "$description": "作業画面（productive UI）の文字の階層。用途で 5 段（見出し / 本文 / 補足 / 小さい注記 / 数値表示）に絞る（25_design-system.md §10-8・2026-11-21 運用者裁定）。棚卸しで文字サイズが 30 種類・任意 px 指定が 675 か所あり、階層が実質的に無かったため。宣伝ページ（LP）の大きな文字はこの 5 段とは別系統にする。font-size のみ定義し line-height は持たない（text.2xs と同じ方針）",
       "heading": {
         "$type": "dimension",
-        "$value": "1.125rem",
+        "$value": "{font-size.18}",
         "$description": "作業画面の見出し（カード・セクションの題）。18px",
         "$extensions": {
           "com.edgescrum.usage": {
@@ -33,7 +33,7 @@
       },
       "body": {
         "$type": "dimension",
-        "$value": "0.875rem",
+        "$value": "{font-size.14}",
         "$description": "作業画面の本文・入力値・一覧の行。14px",
         "$extensions": {
           "com.edgescrum.usage": {
@@ -59,7 +59,7 @@
       },
       "help": {
         "$type": "dimension",
-        "$value": "0.75rem",
+        "$value": "{font-size.12}",
         "$description": "入力欄・設定の補足（小さい字）。12px",
         "$extensions": {
           "com.edgescrum.usage": {
@@ -111,7 +111,7 @@
       },
       "numeric": {
         "$type": "dimension",
-        "$value": "1.5rem",
+        "$value": "{font-size.24}",
         "$description": "数値表示（売上・件数・料金などの主要な数値）。24px",
         "$extensions": {
           "com.edgescrum.usage": {
@@ -159,28 +159,28 @@
     "page": {
       "block": {
         "$type": "dimension",
-        "$value": "1.5rem",
+        "$value": "{space-scale.24}",
         "$description": "本文の上下余白・sm 未満（= py-6）"
       },
       "block-sm": {
         "$type": "dimension",
-        "$value": "2rem",
+        "$value": "{space-scale.32}",
         "$description": "本文の上下余白・sm 以上（= sm:py-8）"
       },
       "inline": {
         "$type": "dimension",
-        "$value": "1rem",
+        "$value": "{space-scale.16}",
         "$description": "本文の左右余白・sm 未満（= px-4）。AppBar の内側の左右余白も同じ値を使う（ヘッダーと本文の左端を揃えるため）"
       },
       "inline-sm": {
         "$type": "dimension",
-        "$value": "2rem",
+        "$value": "{space-scale.32}",
         "$description": "本文の左右余白・sm 以上（= sm:px-8）"
       }
     },
     "inset": {
       "$type": "dimension",
-      "$value": "1rem",
+      "$value": "{space-scale.16}",
       "$description": "部品の中の余白（カード・パネル・行の内側）。16px",
       "$extensions": {
         "com.edgescrum.usage": {
@@ -204,7 +204,7 @@
     },
     "related": {
       "$type": "dimension",
-      "$value": "0.5rem",
+      "$value": "{space-scale.8}",
       "$description": "関係が近いもの同士の間（ラベルと入力欄・アイコンと文字・同じまとまりの行）。8px",
       "$extensions": {
         "com.edgescrum.usage": {
@@ -230,7 +230,7 @@
     },
     "group": {
       "$type": "dimension",
-      "$value": "1.5rem",
+      "$value": "{space-scale.24}",
       "$description": "まとまり同士の間（セクション・カード同士）。24px",
       "$extensions": {
         "com.edgescrum.usage": {

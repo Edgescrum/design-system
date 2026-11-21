@@ -1,0 +1,97 @@
+{
+  "duration": {
+    "$description": "時間のプリミティブ（生の段）。キーは ms の値。0 は「待たない」（transition の delay）と prefers-reduced-motion で動きを消すときの値。★ アプリコードから直接使わない — motion.duration.* / motion.transition.* から参照する",
+    "0": {
+      "$type": "duration",
+      "$value": "0ms",
+      "$description": "0ms"
+    },
+    "100": {
+      "$type": "duration",
+      "$value": "100ms",
+      "$description": "100ms"
+    },
+    "150": {
+      "$type": "duration",
+      "$value": "150ms",
+      "$description": "150ms"
+    },
+    "250": {
+      "$type": "duration",
+      "$value": "250ms",
+      "$description": "250ms"
+    },
+    "400": {
+      "$type": "duration",
+      "$value": "400ms",
+      "$description": "400ms"
+    }
+  },
+  "easing": {
+    "$description": "イージングのプリミティブ。値は IBM Carbon Design System の motion（productive = 作業画面の控えめな曲線 / expressive = 宣伝・初回体験の大きめの曲線）をそのまま収載した。★ アプリコードから直接使わない — motion.productive.* / motion.expressive.* から参照する",
+    "productive": {
+      "standard": {
+        "$type": "cubicBezier",
+        "$value": [
+          0.2,
+          0,
+          0.38,
+          0.9
+        ],
+        "$description": "Carbon productive standard（画面内に留まる要素の移動）"
+      },
+      "entrance": {
+        "$type": "cubicBezier",
+        "$value": [
+          0,
+          0,
+          0.38,
+          0.9
+        ],
+        "$description": "Carbon productive entrance（入ってくる要素。減速して止まる）"
+      },
+      "exit": {
+        "$type": "cubicBezier",
+        "$value": [
+          0.2,
+          0,
+          1,
+          0.9
+        ],
+        "$description": "Carbon productive exit（出ていく要素。加速して消える）"
+      }
+    },
+    "expressive": {
+      "standard": {
+        "$type": "cubicBezier",
+        "$value": [
+          0.4,
+          0.14,
+          0.3,
+          1
+        ],
+        "$description": "Carbon expressive standard"
+      },
+      "entrance": {
+        "$type": "cubicBezier",
+        "$value": [
+          0,
+          0,
+          0.3,
+          1
+        ],
+        "$description": "Carbon expressive entrance"
+      },
+      "exit": {
+        "$type": "cubicBezier",
+        "$value": [
+          0.4,
+          0.14,
+          1,
+          1
+        ],
+        "$description": "Carbon expressive exit"
+      }
+    }
+  }
+}

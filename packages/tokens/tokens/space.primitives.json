@@ -1,0 +1,50 @@
+{
+  "space-scale": {
+    "$description": "余白のプリミティブ（4px グリッドの生の段・単位は rem）。キーは px の値。★ アプリコードから直接使わない — セマンティックの用途（space.inset / related / group / page.*）から参照する。Tailwind の theme には出さない（--spacing-* に出すと p-16 等の標準の段の意味が変わるため）",
+    "4": {
+      "$type": "dimension",
+      "$value": "0.25rem",
+      "$description": "4px"
+    },
+    "8": {
+      "$type": "dimension",
+      "$value": "0.5rem",
+      "$description": "8px"
+    },
+    "12": {
+      "$type": "dimension",
+      "$value": "0.75rem",
+      "$description": "12px"
+    },
+    "16": {
+      "$type": "dimension",
+      "$value": "1rem",
+      "$description": "16px"
+    },
+    "20": {
+      "$type": "dimension",
+      "$value": "1.25rem",
+      "$description": "20px"
+    },
+    "24": {
+      "$type": "dimension",
+      "$value": "1.5rem",
+      "$description": "24px"
+    },
+    "32": {
+      "$type": "dimension",
+      "$value": "2rem",
+      "$description": "32px"
+    },
+    "40": {
+      "$type": "dimension",
+      "$value": "2.5rem",
+      "$description": "40px"
+    },
+    "48": {
+      "$type": "dimension",
+      "$value": "3rem",
+      "$description": "48px"
+    }
+  }
+}

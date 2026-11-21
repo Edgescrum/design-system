@@ -27,6 +27,8 @@ import {
   DEFAULT_MODE,
   LAYOUT_NAMESPACES,
   MODES_DIR,
+  PRIMITIVE_NAMESPACES,
+  REDUCED_MOTION_EXTENSION,
   TOKENS_SOURCE_GLOB,
   assertModeOverridesSemanticOnly,
   flattenOverrides,
@@ -34,7 +36,7 @@ import {
   overridableKeys,
   renderModeCss,
 } from "./modes.mjs";
-import { buildFigmaPayload } from "./scripts/figma-payload.mjs";
+import { FIGMA_UNSUPPORTED_TYPES, buildFigmaPayload } from "./scripts/figma-payload.mjs";
 import {
   USAGE_EXTENSION,
   checkRefs,
@@ -80,6 +82,36 @@ const readJson = async (p) => JSON.parse(await readFile(p, "utf8"));
 const primitivesJson = await readJson(join(TOKEN_DIR, "color.primitives.json"));
 const semanticJson = await readJson(join(TOKEN_DIR, "color.semantic.json"));
 const dimensionJson = await readJson(join(TOKEN_DIR, "dimension.json"));
+const typographyJson = await readJson(join(TOKEN_DIR, "typography.json"));
+const motionJson = await readJson(join(TOKEN_DIR, "motion.json"));
+/** 色以外のプリミティブ（文字サイズ・太さ・余白・時間・イージング）。sync-figma.mjs と同じ合わせ方 */
+const scalePrimitivesJson = {
+  ...(await readJson(join(TOKEN_DIR, "typography.primitives.json"))),
+  ...(await readJson(join(TOKEN_DIR, "space.primitives.json"))),
+  ...(await readJson(join(TOKEN_DIR, "motion.primitives.json"))),
+};
+/** 全トークンの木（別名の解決用）。トップレベルの名前空間は重ならない */
+const allTokensTree = {
+  ...primitivesJson,
+  ...semanticJson,
+  ...dimensionJson,
+  ...typographyJson,
+  ...motionJson,
+  ...scalePrimitivesJson,
+};
+/** `{a.b.c}` → 参照先のトークン（ノード）。 */
+function tokenAt(ref) {
+  let node = allTokensTree;
+  for (const key of ref.slice(1, -1).split(".")) {
+    node = node?.[key];
+    if (!node) throw new Error(`参照が解決できません: ${ref}`);
+  }
+  if (!("$value" in node)) throw new Error(`参照先がトークンではありません: ${ref}`);
+  return node;
+}
+/** 別名を辿って実値にする（文字列の $value のみ）。 */
+const resolveDeep = (value) =>
+  typeof value === "string" && value.startsWith("{") ? resolveDeep(tokenAt(value).$value) : value;
 
 /** DTCG ツリーのトークンパス（ドット区切り）を集める。 */
 function tokenPaths(node, path = [], out = new Set()) {
@@ -214,6 +246,8 @@ check("verify:figma-default-mode-name — 新規作成時に既定モードへ�
     primitivesJson,
     semanticJson,
     dimensionJson,
+    scalePrimitivesJson,
+    motionJson,
     modes: [],
     defaultModeName: DEFAULT_MODE,
     existing: EMPTY,
@@ -238,6 +272,8 @@ check("verify:figma-default-mode-name — 既に Base なら rename を出さな
     primitivesJson,
     semanticJson,
     dimensionJson,
+    scalePrimitivesJson,
+    motionJson,
     modes: [],
     defaultModeName: DEFAULT_MODE,
     existing: already,
@@ -256,6 +292,8 @@ check("verify:figma-default-mode-name — 名前が違えば rename を出す", 
     primitivesJson,
     semanticJson,
     dimensionJson,
+    scalePrimitivesJson,
+    motionJson,
     modes: [],
     defaultModeName: DEFAULT_MODE,
     existing: stale,
@@ -272,6 +310,8 @@ check("verify:figma-modes — 標本モードが CREATE され値が alias で�
     primitivesJson,
     semanticJson,
     dimensionJson,
+    scalePrimitivesJson,
+    motionJson,
     modes: [fixture],
     defaultModeName: DEFAULT_MODE,
     existing: EMPTY,
@@ -314,6 +354,8 @@ check("verify:figma-modes — 既存モードがあれば CREATE せず値だけ
     primitivesJson,
     semanticJson,
     dimensionJson,
+    scalePrimitivesJson,
+    motionJson,
     modes: [fixture],
     defaultModeName: DEFAULT_MODE,
     existing: withMode,
@@ -329,6 +371,8 @@ check("verify:figma-modes — 既定に無いキーを含むモードは payload
         primitivesJson,
         semanticJson,
         dimensionJson,
+        scalePrimitivesJson,
+        motionJson,
         modes: [{ name: "bad", overrides: { nope: { $value: "#000000" } } }],
         defaultModeName: DEFAULT_MODE,
         existing: EMPTY,
@@ -366,7 +410,8 @@ const layoutTokens = Object.fromEntries(
   Object.keys(LAYOUT_NAMESPACES).flatMap((namespace) =>
     Object.entries(flattenOverrides(dimensionJson[namespace] ?? {})).map(([k, v]) => [
       `${namespace}.${k}`,
-      v.$value,
+      // 値はプリミティブ（space-scale.*）への別名なので実値に解決して比べる
+      resolveDeep(v.$value),
     ])
   )
 );
@@ -391,6 +436,9 @@ const readDist = async (rel) => {
 };
 const themeCss = await readDist("css/theme.css");
 const tokensCss = await readDist("css/tokens.css");
+const primitivesCss = await readDist("css/primitives.css");
+/** tokens.css を :root と reduced-motion の @media に分ける */
+const [rootCss = "", reducedCss = ""] = (tokensCss ?? "").split("@media (prefers-reduced-motion: reduce)");
 
 check("verify:layout-tokens — theme では spacing / container として出る（色ではない）", () => {
   ok(themeCss && tokensCss, "dist が無い。`pnpm build` を先に実行すること");
@@ -451,6 +499,8 @@ check("verify:layout-modes — Figma payload では FLOAT の実値（px）が�
     primitivesJson,
     semanticJson,
     dimensionJson,
+    scalePrimitivesJson,
+    motionJson,
     modes: [{ name: "layout-example", overrides: { "size.content.admin": { $value: "90rem" } } }],
     defaultModeName: DEFAULT_MODE,
     existing: EMPTY,
@@ -468,7 +518,6 @@ check("verify:layout-modes — Figma payload では FLOAT の実値（px）が�
 // ---------------------------------------------------------------------------
 // 7. 文字の階層・太さ・用途の余白（peco 25_design-system.md §10-8）
 // ---------------------------------------------------------------------------
-const typographyJson = await readJson(join(TOKEN_DIR, "typography.json"));
 
 /** §10-8 の値。変えるなら §10-8 の裁定を先に変えること */
 const ROLE_VALUES = {
@@ -501,7 +550,15 @@ check("verify:type-roles — caption は text.2xs の別名（値を二重に持
 });
 
 /** 約束が必須のトークン（§10-8 で足したもの）。今後のトークンも足すこと */
-const CONTRACT_REQUIRED_PREFIXES = ["text.role.", "font.weight.", "space.inset", "space.related", "space.group"];
+const CONTRACT_REQUIRED_PREFIXES = [
+  "text.role.",
+  "font.weight.",
+  "space.inset",
+  "space.related",
+  "space.group",
+  // 動きの用途（§10-9）は全部
+  "motion.",
+];
 
 check("verify:token-usage — 約束（$extensions.com.edgescrum.usage）が §10-2 の欄を満たす", () => {
   const all = [];
@@ -512,10 +569,10 @@ check("verify:token-usage — 約束（$extensions.com.edgescrum.usage）が §1
       else visit(val, [...path, key]);
     }
   };
-  visit({ ...semanticJson, ...dimensionJson, ...typographyJson }, []);
+  visit({ ...semanticJson, ...dimensionJson, ...typographyJson, ...motionJson }, []);
   const required = all.filter(([p]) => CONTRACT_REQUIRED_PREFIXES.some((x) => p.startsWith(x)));
-  // 空振り防止: 5 段 + 3 種 + 3 種 = 11
-  eq(required.length, 11, "約束が必須のトークン数");
+  // 空振り防止: 文字 5 段 + 太さ 3 種 + 余白 3 種 + 動き（時間 4 + イージング 6 + transition 7）= 28
+  eq(required.length, 28, "約束が必須のトークン数");
   const problems = [];
   for (const [path, token] of all) {
     const usage = token.$extensions?.[USAGE_EXTENSION];
@@ -548,24 +605,48 @@ check("verify:token-usage — 欄の検査器が違反を拒否する（標本�
   ok(validateUsage({ ...good, dont_use_wen: ["x → y"] }).some((p) => /未知の欄/.test(p)), "綴り違いの欄が通る");
 });
 
-check("verify:figma-type-roles — Figma に FLOAT で載り、caption は text/2xs の別名", () => {
+check("verify:figma-type-roles — Figma に FLOAT で載り、役割はプリミティブの別名", () => {
   const { payload } = buildFigmaPayload({
     primitivesJson,
     semanticJson,
     dimensionJson,
+    scalePrimitivesJson,
+    motionJson,
     typographyJson,
     modes: [],
     defaultModeName: DEFAULT_MODE,
     existing: EMPTY,
   });
   const byName = new Map(payload.variables.map((v) => [v.name, v]));
+  const byId = new Map(payload.variables.map((v) => [v.id, v]));
   const valueOf = (name) => payload.variableModeValues.find((v) => v.variableId === byName.get(name)?.id)?.value;
-  for (const [name, px] of [["text/role/heading", 18], ["text/role/body", 14], ["text/role/help", 12], ["text/role/numeric", 24]]) {
-    eq(valueOf(name), px, name);
+  const primColId = payload.variableCollections.find((c) => c.name === "Primitives").id;
+  /** 別名を辿って (最後の変数名, 数値) を返す */
+  const follow = (name) => {
+    let v = valueOf(name);
+    let at = name;
+    while (v?.type === "VARIABLE_ALIAS") {
+      at = byId.get(v.id).name;
+      v = valueOf(at);
+    }
+    return [at, v];
+  };
+  for (const [name, prim, px] of [
+    ["text/role/heading", "font-size/18", 18],
+    ["text/role/body", "font-size/14", 14],
+    ["text/role/help", "font-size/12", 12],
+    ["text/role/numeric", "font-size/24", 24],
+    ["text/2xs", "font-size/11", 11],
+    ["text/3xs", "font-size/10", 10],
+  ]) {
+    eq(valueOf(name)?.type, "VARIABLE_ALIAS", `${name} の値の種類`);
+    eq(follow(name).join("="), `${prim}=${px}`, `${name} の別名先と値`);
+  }
+  for (const name of ["text/role/heading", "text/role/body", "text/role/help", "text/role/numeric"]) {
     eq(byName.get(name).scopes?.join(","), "FONT_SIZE", `${name} のスコープ`);
   }
-  for (const [name, w] of [["font/weight/regular", 400], ["font/weight/emphasis", 600], ["font/weight/strong", 700]]) {
-    eq(valueOf(name), w, name);
+  for (const [name, prim, w] of [["font/weight/regular", "font-weight/400", 400], ["font/weight/emphasis", "font-weight/600", 600], ["font/weight/strong", "font-weight/700", 700]]) {
+    eq(follow(name).join("="), `${prim}=${w}`, `${name} の別名先と値`);
     eq(byName.get(name).scopes?.join(","), "FONT_WEIGHT", `${name} のスコープ`);
   }
   const caption = valueOf("text/role/caption");
@@ -573,9 +654,272 @@ check("verify:figma-type-roles — Figma に FLOAT で載り、caption は text/
   eq(caption.id, byName.get("text/2xs").id, "text/role/caption の別名先");
   // 既存の text/2xs はスコープを付けない（payload の既存部分を変えない）
   eq(byName.get("text/2xs").scopes, undefined, "text/2xs のスコープ");
+  for (const [name, prim, px] of [["space/inset", "space-scale/16", 16], ["space/related", "space-scale/8", 8], ["space/group", "space-scale/24", 24], ["space/page/block", "space-scale/24", 24], ["space/page/block-sm", "space-scale/32", 32]]) {
+    eq(follow(name).join("="), `${prim}=${px}`, `${name} の別名先と値`);
+  }
   for (const name of ["space/inset", "space/related", "space/group"]) {
     eq(byName.get(name)?.scopes?.join(","), "GAP", `${name} のスコープ`);
   }
+  // プリミティブは Primitives コレクション（非公開）にある
+  for (const name of ["font-size/18", "font-weight/600", "space-scale/16", "duration/250"]) {
+    eq(byName.get(name)?.variableCollectionId, primColId, `${name} のコレクション`);
+    eq(byName.get(name)?.resolvedType, "FLOAT", `${name} の型`);
+  }
+});
+
+// ---------------------------------------------------------------------------
+// 7-2. プリミティブ層とセマンティック層（文字・余白・動き）
+// ---------------------------------------------------------------------------
+// 色と同じ 2 層にした（color.primitives.json → color.semantic.json）。セマンティックが実値を
+// 持つと、モードで「役割の割り当て」を差し替えられず、同じ値が 2 箇所に書かれて片方だけ直る。
+
+/** セマンティック層のうち、プリミティブへの別名でなければならないもの（フォントスタックと本文幅は対象外） */
+const SEMANTIC_SCALE_GROUPS = [
+  ["text", dimensionJson.text],
+  ["space", dimensionJson.space],
+  ["font.weight", typographyJson.font.weight],
+  ["motion", motionJson.motion],
+];
+const semanticScaleTokens = SEMANTIC_SCALE_GROUPS.flatMap(([prefix, node]) =>
+  Object.entries(flattenOverrides(node)).map(([k, token]) => [`${prefix}.${k}`, token])
+);
+
+/**
+ * 1 つの参照（`{…}`）を辿り、プリミティブの実値に着くことを確かめる。着いたプリミティブのパスを返す。
+ * 実値に出会った時点でそこがプリミティブでなければ落とす。
+ */
+function assertReachesPrimitive(where, ref) {
+  if (typeof ref !== "string" || !ref.startsWith("{")) {
+    throw new Error(`${where}: 実値 ${JSON.stringify(ref)} を持っている（プリミティブへの別名 {…} にすること）`);
+  }
+  const seen = new Set();
+  let at = ref;
+  for (;;) {
+    if (seen.has(at)) throw new Error(`${where}: 参照が循環している（${[...seen].join(" → ")}）`);
+    seen.add(at);
+    const node = tokenAt(at);
+    const v = node.$value;
+    if (typeof v === "string" && v.startsWith("{")) {
+      at = v;
+      continue;
+    }
+    const path = at.slice(1, -1);
+    if (!PRIMITIVE_NAMESPACES.includes(path.split(".")[0])) {
+      throw new Error(`${where}: ${ref} の行き先 ${at} はプリミティブではないのに実値を持っている`);
+    }
+    return path;
+  }
+}
+
+/** セマンティックの 1 トークンを検査する（transition は 3 つの欄それぞれ）。問題の一覧を返す */
+function semanticAliasProblems(path, token) {
+  const problems = [];
+  const refs =
+    token.$type === "transition" && token.$value && typeof token.$value === "object"
+      ? Object.entries(token.$value).map(([k, v]) => [`${path}.${k}`, v])
+      : [[path, token.$value]];
+  for (const [where, ref] of refs) {
+    try {
+      assertReachesPrimitive(where, ref);
+    } catch (err) {
+      problems.push(err.message);
+    }
+  }
+  return problems;
+}
+
+check("verify:semantic-aliases — 文字・余白・動きのセマンティックはすべてプリミティブへの別名", () => {
+  // 空振り防止: text 7（2xs・3xs・役割 5）+ space 7（page 4・用途 3）+ font.weight 3 + motion 17 = 34
+  eq(semanticScaleTokens.length, 34, "検査対象のセマンティックトークン数");
+  const problems = semanticScaleTokens.flatMap(([path, token]) => semanticAliasProblems(path, token));
+  ok(problems.length === 0, problems.join("\n"));
+});
+
+check("verify:semantic-aliases — 検査器が実値・行き先違いを拒否する（標本）", () => {
+  eq(semanticAliasProblems("x", { $value: "{font-size.14}" }).length, 0, "正しい別名の問題数");
+  eq(semanticAliasProblems("x", { $value: "{text.role.caption}" }).length, 0, "セマンティック経由の別名の問題数");
+  ok(semanticAliasProblems("x", { $value: "0.875rem" }).some((p) => /実値/.test(p)), "実値が通る");
+  ok(semanticAliasProblems("x", { $value: "{size.content.admin}" }).some((p) => /プリミティブではない/.test(p)), "本文幅（実値のセマンティック）への別名が通る");
+  ok(
+    semanticAliasProblems("x", {
+      $type: "transition",
+      $value: { duration: "250ms", delay: "{duration.0}", timingFunction: "{motion.productive.enter}" },
+    }).some((p) => /x\.duration: 実値/.test(p)),
+    "transition の欄の実値が通る"
+  );
+});
+
+check("verify:primitives — プリミティブは実値で、theme に出ない（Tailwind のユーティリティを生やさない）", () => {
+  ok(themeCss && tokensCss, "dist が無い。`pnpm build` を先に実行すること");
+  const primitives = PRIMITIVE_NAMESPACES.filter((n) => n !== "color").flatMap((n) =>
+    Object.entries(flattenOverrides(scalePrimitivesJson[n] ?? {})).map(([k, t]) => [`${n}.${k}`, t])
+  );
+  // 空振り防止: font-size 10 + font-weight 4 + space-scale 9 + duration 5 + easing 6 = 34
+  eq(primitives.length, 34, "色以外のプリミティブ数");
+  for (const [path, token] of primitives) {
+    ok(!(typeof token.$value === "string" && token.$value.startsWith("{")), `${path} が別名になっている（プリミティブは実値）`);
+    ok(token.$description, `${path} に $description が無い`);
+  }
+  for (const [path] of primitives) {
+    // --font-weight-regular（セマンティック）と --font-weight-400（プリミティブ）は接頭辞が同じなので、
+    // 名前の全体で見る
+    const name = `--${path.split(".").join("-")}:`;
+    ok(!themeCss.includes(name), `プリミティブ ${path} が theme.css に出ている`);
+    ok(primitivesCss?.includes(`  ${name}`), `プリミティブ ${path} が primitives.css に無い`);
+    ok(!rootCss.includes(`  ${name}`), `プリミティブ ${path} が tokens.css（セマンティック）に出ている`);
+  }
+  // 余白の段を --spacing-<数字> に出すと Tailwind の p-16（= 4rem）の意味が変わる
+  ok(!/--spacing-\d/.test(themeCss), "theme.css に --spacing-<数字> が出ている（Tailwind 標準の段を上書きする）");
+});
+
+check("verify:primitives — 文字サイズは使われている段を網羅し、text.2xs / 3xs の値は変わらない", () => {
+  const px = Object.keys(scalePrimitivesJson["font-size"]).filter((k) => !k.startsWith("$"));
+  eq(px.join(","), "10,11,12,14,16,18,20,24,30,36", "font-size の段");
+  eq(resolveDeep(dimensionJson.text["2xs"].$value), "0.6875rem", "text.2xs の値");
+  eq(resolveDeep(dimensionJson.text["3xs"].$value), "0.625rem", "text.3xs の値");
+  const space = Object.keys(scalePrimitivesJson["space-scale"]).filter((k) => !k.startsWith("$"));
+  eq(space.join(","), "4,8,12,16,20,24,32,40,48", "space-scale の段（4px グリッド）");
+  for (const k of space) ok(Number(k) % 4 === 0, `space-scale.${k} が 4px グリッドに乗っていない`);
+});
+
+// ---------------------------------------------------------------------------
+// 7-3. 動き（peco 25_design-system.md §10-9）
+// ---------------------------------------------------------------------------
+const motionTokens = Object.entries(flattenOverrides(motionJson.motion)).map(([k, t]) => [`motion.${k}`, t]);
+const MOTION_DURATIONS = { "state-change": "100ms", feedback: "150ms", surface: "250ms", screen: "400ms" };
+const MOTION_TRANSITIONS = {
+  "page-forward": ["400ms", "productive-standard"],
+  "page-back": ["400ms", "productive-standard"],
+  "sheet-enter": ["250ms", "productive-enter"],
+  "sheet-exit": ["250ms", "productive-exit"],
+  "modal-enter": ["250ms", "productive-enter"],
+  "modal-exit": ["250ms", "productive-exit"],
+  "tab-switch": ["150ms", "productive-standard"],
+};
+const CARBON = {
+  "productive-standard": "cubic-bezier(0.2, 0, 0.38, 0.9)",
+  "productive-enter": "cubic-bezier(0, 0, 0.38, 0.9)",
+  "productive-exit": "cubic-bezier(0.2, 0, 1, 0.9)",
+  "expressive-standard": "cubic-bezier(0.4, 0.14, 0.3, 1)",
+  "expressive-enter": "cubic-bezier(0, 0, 0.3, 1)",
+  "expressive-exit": "cubic-bezier(0.4, 0.14, 1, 1)",
+};
+
+check("verify:motion-tokens — 時間・イージング・transition が :root と theme に出る", () => {
+  ok(themeCss && tokensCss, "dist が無い。`pnpm build` を先に実行すること");
+  for (const [name, ms] of Object.entries(MOTION_DURATIONS)) {
+    ok(rootCss.includes(`  --motion-duration-${name}: ${ms};`), `tokens.css に --motion-duration-${name}: ${ms} が無い`);
+    // var() 経由（reduced-motion の @media で 0ms に差し替えるため）
+    ok(
+      themeCss.includes(`  --transition-duration-${name}: var(--motion-duration-${name});`),
+      `theme.css に --transition-duration-${name}（Tailwind の duration-${name}）が無い`
+    );
+  }
+  for (const [name, css] of Object.entries(CARBON)) {
+    ok(rootCss.includes(`  --motion-${name}: ${css};`), `tokens.css に --motion-${name}: ${css} が無い`);
+    ok(themeCss.includes(`  --ease-${name}: var(--motion-${name});`), `theme.css に --ease-${name}（Tailwind の ease-${name}）が無い`);
+  }
+  for (const [name, [ms, ease]] of Object.entries(MOTION_TRANSITIONS)) {
+    const line = `  --motion-transition-${name}: ${ms} ${CARBON[ease]} 0ms;`;
+    ok(rootCss.includes(line), `tokens.css に ${line.trim()} が無い`);
+  }
+  // transition は Tailwind に受け皿が無いので theme に出さない（色として出ていないことも見る）
+  ok(!/--[a-z-]*transition-(page|sheet|modal|tab)/.test(themeCss), "transition が theme.css に出ている");
+  ok(!/--color-motion-/.test(themeCss), "motion が色として theme.css に出ている（NON_COLOR_NAMESPACES を確認）");
+  eq(motionTokens.length, 17, "motion のトークン数");
+});
+
+check("verify:motion-reduced — 動きは prefers-reduced-motion で 0ms、色・不透明度だけが 150ms 以下で残る", () => {
+  ok(reducedCss, "tokens.css に @media (prefers-reduced-motion: reduce) が無い");
+  const timed = motionTokens.filter(([, t]) => t.$type === "duration" || t.$type === "transition");
+  eq(timed.length, 11, "時間を持つ motion トークン数（時間 4 + transition 7）");
+  const problems = [];
+  for (const [path, token] of timed) {
+    const mode = token.$extensions?.[REDUCED_MOTION_EXTENSION];
+    const varName = `--${path.split(".").join("-")}`;
+    const inReduced = new RegExp(`\\n {4}${varName}: 0ms[ ;]`).test(reducedCss);
+    if (mode === "remove") {
+      if (!inReduced) problems.push(`${path}: remove なのに @media で 0ms になっていない`);
+    } else if (mode === "keep") {
+      if (reducedCss.includes(`${varName}:`)) problems.push(`${path}: keep なのに @media で上書きされている`);
+      const ms = Number(String(resolveDeep(token.$type === "transition" ? token.$value.duration : token.$value)).replace(/ms$/, ""));
+      if (!(ms <= 150)) problems.push(`${path}: keep（動きを減らす設定でも残る）なのに ${ms}ms。150ms 以下にする`);
+    } else {
+      problems.push(`${path}: $extensions["${REDUCED_MOTION_EXTENSION}"] が remove / keep のどちらでもない（${mode}）`);
+    }
+  }
+  ok(problems.length === 0, problems.join("\n"));
+  // 色・不透明度の時間は残る / 動きの時間は消える（§10-9 の要点を名指しで）
+  ok(!reducedCss.includes("--motion-duration-feedback"), "feedback（色・不透明度）が 0ms にされている");
+  for (const name of ["state-change", "surface", "screen"]) {
+    ok(reducedCss.includes(`    --motion-duration-${name}: 0ms;`), `${name} が 0ms にされていない`);
+  }
+  // イージングは時間ではないので上書きしない
+  ok(!/--motion-(productive|expressive)-/.test(reducedCss.split("\n").filter((l) => !l.includes("transition")).join("\n")), "イージングが @media で上書きされている");
+});
+
+check("verify:motion-contracts — expressive は作業画面で使わないと約束に書かれている", () => {
+  const expressive = motionTokens.filter(([p]) => p.startsWith("motion.expressive."));
+  eq(expressive.length, 3, "expressive のトークン数");
+  for (const [path, token] of expressive) {
+    const usage = token.$extensions?.[USAGE_EXTENSION];
+    ok(usage?.never?.some((l) => /作業画面/.test(l) && /expressive/.test(l)), `${path} の never に「作業画面で expressive を使わない」が無い`);
+    ok(usage?.dont_use_when?.some((l) => /作業画面.*→\s*motion\.productive\./.test(l)), `${path} の dont_use_when に「作業画面 → motion.productive.*」が無い`);
+  }
+  for (const [path, token] of motionTokens) {
+    eq(token.$extensions?.[USAGE_EXTENSION]?.decided_by, "peco docs/v2/requirements/25_design-system.md §10-9", `${path} の decided_by`);
+  }
+});
+
+check("verify:figma-motion — 時間は FLOAT（ms）で写り、イージング・transition は明示的に飛ばす", () => {
+  const { payload, stats } = buildFigmaPayload({
+    primitivesJson,
+    semanticJson,
+    dimensionJson,
+    scalePrimitivesJson,
+    motionJson,
+    typographyJson,
+    modes: [],
+    defaultModeName: DEFAULT_MODE,
+    existing: EMPTY,
+  });
+  const byName = new Map(payload.variables.map((v) => [v.name, v]));
+  const valueOf = (name) => payload.variableModeValues.find((v) => v.variableId === byName.get(name)?.id)?.value;
+  for (const ms of [0, 100, 150, 250, 400]) {
+    eq(valueOf(`duration/${ms}`), ms, `duration/${ms} の値`);
+    eq(byName.get(`duration/${ms}`).scopes?.length, 0, `duration/${ms} のスコープ（どのピッカーにも出さない）`);
+  }
+  for (const [name, ms] of Object.entries(MOTION_DURATIONS)) {
+    const v = valueOf(`motion/duration/${name}`);
+    eq(v?.type, "VARIABLE_ALIAS", `motion/duration/${name} の値の種類`);
+    eq(v.id, byName.get(`duration/${parseInt(ms, 10)}`).id, `motion/duration/${name} の別名先`);
+    eq(byName.get(`motion/duration/${name}`).scopes?.length, 0, `motion/duration/${name} のスコープ`);
+  }
+  // 飛ばしたもの: easing 6（プリミティブ）+ productive / expressive 6 + transition 7 = 19
+  eq(stats.skipped.length, 19, "Figma に写さなかったトークン数");
+  ok(stats.skipped.every((t) => FIGMA_UNSUPPORTED_TYPES.includes(t.type)), `飛ばした型: ${JSON.stringify(stats.skipped)}`);
+  ok(
+    !payload.variables.some((v) => /^(easing\/|motion\/(productive|expressive|transition)\/)/.test(v.name)),
+    "イージング・transition の変数が作られている"
+  );
+});
+
+check("verify:mode-guard — 色以外のプリミティブと motion もモードで上書きできない", () => {
+  throws(
+    () => assertModeOverridesSemanticOnly({ name: "x", overrides: { "font-size.14": {} } }, defaultKeys),
+    /primitives はモードを持たない/,
+    "font-size への侵入"
+  );
+  throws(
+    () => assertModeOverridesSemanticOnly({ name: "x", overrides: { "duration.250": {} } }, defaultKeys),
+    /primitives はモードを持たない/,
+    "duration への侵入"
+  );
+  throws(
+    () => assertModeOverridesSemanticOnly({ name: "x", overrides: { "motion.duration.surface": {} } }, defaultKeys),
+    /motion はまだモードの対象外/,
+    "motion の上書き"
+  );
 });
 
 // ---------------------------------------------------------------------------
@@ -602,6 +946,16 @@ check("verify:design-md-frontmatter — 先頭 YAML が DTCG からの生成結�
   // 空振り防止: 生成結果に今回のトークンが載っていること
   ok(expectedFm.includes("  role:\n    heading:\n      fontSize: \"1.125rem\""), "typography.role.heading が生成されていない");
   ok(expectedFm.includes("  inset: \"1rem\""), "spacing.inset が生成されていない");
+  ok(expectedFm.includes("\n    size:\n      \"10\":\n        fontSize: \"0.625rem\""), "typography.scale.size が生成されていない");
+  ok(expectedFm.includes("\n  scale:\n    \"4\": \"0.25rem\""), "spacing.scale が生成されていない");
+  ok(
+    expectedFm.includes("\nmotion:\n  duration-state-change:\n    duration: \"100ms\""),
+    "motion（DESIGN.md 仕様の motion 節）が生成されていない"
+  );
+  ok(
+    expectedFm.includes('  transition-sheet-enter:\n    duration: "250ms"\n    delay: "0ms"\n    timingFunction: "cubic-bezier(0, 0, 0.38, 0.9)"'),
+    "motion.transition-sheet-enter が生成されていない"
+  );
 });
 
 check("verify:design-md-refs — `@path` の参照先がすべて存在する", () => {

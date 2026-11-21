@@ -77,6 +77,37 @@ typography:
       fontWeight: 600
     strong:
       fontWeight: 700
+  scale:
+    size:
+      "10":
+        fontSize: "0.625rem"
+      "11":
+        fontSize: "0.6875rem"
+      "12":
+        fontSize: "0.75rem"
+      "14":
+        fontSize: "0.875rem"
+      "16":
+        fontSize: "1rem"
+      "18":
+        fontSize: "1.125rem"
+      "20":
+        fontSize: "1.25rem"
+      "24":
+        fontSize: "1.5rem"
+      "30":
+        fontSize: "1.875rem"
+      "36":
+        fontSize: "2.25rem"
+    weight:
+      "400":
+        fontWeight: 400
+      "500":
+        fontWeight: 500
+      "600":
+        fontWeight: 600
+      "700":
+        fontWeight: 700
 rounded:
   control: "0.75rem"
   control-sm: "0.5rem"
@@ -97,6 +128,65 @@ spacing:
     flow-compact: "32rem"
     wide: "64rem"
     lp: "72rem"
+  scale:
+    "4": "0.25rem"
+    "8": "0.5rem"
+    "12": "0.75rem"
+    "16": "1rem"
+    "20": "1.25rem"
+    "24": "1.5rem"
+    "32": "2rem"
+    "40": "2.5rem"
+    "48": "3rem"
+motion:
+  duration-state-change:
+    duration: "100ms"
+  duration-feedback:
+    duration: "150ms"
+  duration-surface:
+    duration: "250ms"
+  duration-screen:
+    duration: "400ms"
+  productive-standard:
+    timingFunction: "cubic-bezier(0.2, 0, 0.38, 0.9)"
+  productive-enter:
+    timingFunction: "cubic-bezier(0, 0, 0.38, 0.9)"
+  productive-exit:
+    timingFunction: "cubic-bezier(0.2, 0, 1, 0.9)"
+  expressive-standard:
+    timingFunction: "cubic-bezier(0.4, 0.14, 0.3, 1)"
+  expressive-enter:
+    timingFunction: "cubic-bezier(0, 0, 0.3, 1)"
+  expressive-exit:
+    timingFunction: "cubic-bezier(0.4, 0.14, 1, 1)"
+  transition-page-forward:
+    duration: "400ms"
+    delay: "0ms"
+    timingFunction: "cubic-bezier(0.2, 0, 0.38, 0.9)"
+  transition-page-back:
+    duration: "400ms"
+    delay: "0ms"
+    timingFunction: "cubic-bezier(0.2, 0, 0.38, 0.9)"
+  transition-sheet-enter:
+    duration: "250ms"
+    delay: "0ms"
+    timingFunction: "cubic-bezier(0, 0, 0.38, 0.9)"
+  transition-sheet-exit:
+    duration: "250ms"
+    delay: "0ms"
+    timingFunction: "cubic-bezier(0.2, 0, 1, 0.9)"
+  transition-modal-enter:
+    duration: "250ms"
+    delay: "0ms"
+    timingFunction: "cubic-bezier(0, 0, 0.38, 0.9)"
+  transition-modal-exit:
+    duration: "250ms"
+    delay: "0ms"
+    timingFunction: "cubic-bezier(0.2, 0, 1, 0.9)"
+  transition-tab-switch:
+    duration: "150ms"
+    delay: "0ms"
+    timingFunction: "cubic-bezier(0.2, 0, 0.38, 0.9)"
 ---
 # @edgescrum/ds-foundation
 
@@ -107,9 +197,9 @@ spacing:
 
 ## Never（このパッケージ全体）
 
-- 色・文字サイズ・太さ・余白・角丸の値を直書きしない。トークンを使う
-- 任意 px 指定（`text-[11px]` / `p-[14px]` / `font-[550]` 等）を書かない
-- プリミティブ（`color.*`）をアプリから直接使わない。セマンティックの役割トークンを使う
+- 色・文字サイズ・太さ・余白・角丸・時間・イージングの値を直書きしない。トークンを使う
+- 任意 px 指定（`text-[11px]` / `p-[14px]` / `font-[550]` / `duration-[120ms]` 等）を書かない
+- プリミティブ（`color.*` / `font-size.*` / `font-weight.*` / `space-scale.*` / `duration.*` / `easing.*`、先頭 YAML の `typography.scale.*` / `spacing.scale.*`）をアプリから直接使わない。セマンティックの役割トークンを使う
 - 約束の無いトークンを足さない。どの `dont_use_when` の矢印の先にも当てはまらなければ、作らずに止めて運用者に上げる
 - この先頭の YAML を手で直さない。値は DTCG を直して build する
 
@@ -130,6 +220,7 @@ spacing:
 - `font.weight.strong` 700 — 数値表示・ごく短い強調
 
 宣伝ページ（LP）の大きな文字は作業画面の 5 段とは別系統にする（未収載）。
+値はすべて文字サイズ・太さのプリミティブ（`@tokens/typography.primitives.json`）への参照で、プリミティブは直接使わない。
 `text.2xs` / `text.3xs` は役割を持たない段で、新しいコードは役割の 5 段を使う。
 
 ## Layout（余白は用途で 4 種類）
@@ -142,13 +233,47 @@ spacing:
 - `space.page.*` — ページ本文の外枠。持ち主は ds-core の `PageBody` で、ページは書かない
 
 本文の最大幅（`size.content.*`）の持ち主は `PageBody` / `AppBar` の `width`。
+余白の値はすべて 4px グリッドのプリミティブ（`@tokens/space.primitives.json`）への参照で、プリミティブは直接使わない。
 
 ## Colors / Shapes
 
 色の役割は `@tokens/color.semantic.json`、角丸の役割（`radius.*`）は `@tokens/dimension.json`。
 使い方の約束は未記入（peco 25_design-system.md §10-6 の 7 で書く）。
 
+## Motion
+
+約束: `@tokens/motion.json`（`motion.*`）。値はすべてプリミティブ（`@tokens/motion.primitives.json`）への参照。
+Tailwind では `duration-<名前>` / `ease-<系統>-<名前>`、組み合わせは CSS 変数 `--motion-transition-<名前>`
+（`transition: transform var(--motion-transition-sheet-enter)` のように動かすプロパティを前に付ける）。
+
+時間は用途で 4 段。小さく局所的な変化ほど短く、画面全体の変化ほど長い。
+
+- `motion.duration.state-change` 100ms — 部品の中の小さい動き（トグルのつまみ・開閉の矢印）
+- `motion.duration.feedback` 150ms — hover・押下・フォーカスでの色・背景・枠線・不透明度の変化
+- `motion.duration.surface` 250ms — ボトムシート・モーダル・ポップオーバーの出入り
+- `motion.duration.screen` 400ms — 画面全体の切り替え（進む・戻る）
+
+イージングは 2 系統（IBM Carbon の値）。入ってくる要素は減速（enter）、出ていく要素は加速（exit）、留まる要素は standard。
+
+- `motion.productive.{standard,enter,exit}` — 作業画面（管理画面・お客さまの予約や設定の画面）
+- `motion.expressive.{standard,enter,exit}` — 宣伝ページ（LP）と初回体験（オンボーディング）だけ
+
+組み合わせ（`motion.transition.*`）: `page-forward` / `page-back`（400ms・productive standard）、
+`sheet-enter` / `sheet-exit`・`modal-enter` / `modal-exit`（250ms・productive enter / exit）、`tab-switch`（150ms・productive standard）。
+
+動きを減らす設定（`prefers-reduced-motion: reduce`）では、`tokens.css` が動き（位置・大きさ・回転・ループ）の変数を
+`0ms` に上書きする。色・不透明度の変化（`motion.duration.feedback`・150ms 以下）だけが残る。
+どの変数が消えるかは各トークンの `$extensions["com.edgescrum.reduced-motion"]`（`remove` / `keep`）が正。
+
+never:
+
+- 動きだけで情報を伝えない（状態は文字・アイコン・色でも示す）
+- 視界の端で動かし続けない（ループする装飾の動きを作らない）
+- 作業画面で expressive を使わない
+- 時間やイージングを直書きしない（`duration-[120ms]`・`ease-in-out`・`cubic-bezier(…)`・`transition: .3s` 等）
+- 位置・大きさ・回転の動きに `motion.duration.feedback` を使わない（動きを減らす設定でも消えない時間のため）
+
 ## Decided by
 
-peco `docs/v2/requirements/25_design-system.md` §10（とくに §10-8 の上限）と
+peco `docs/v2/requirements/25_design-system.md` §10（とくに §10-8 の上限・§10-9 の動き）と
 `docs/adr/0032-ai-readable-usage-contracts-live-next-to-tokens-and-parts.md`。

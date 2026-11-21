@@ -4,6 +4,10 @@
  * 対応関係:
  *   tokens/color.primitives.json  → コレクション "Primitives"（hiddenFromPublishing）
  *   tokens/color.semantic.json    → コレクション "Semantic"（publish 対象・既定モード "Base"）
+ *   tokens/*.primitives.json（色以外）→ "Primitives" の FLOAT（font-size / font-weight / space-scale / duration）。
+ *                                    easing は Figma で表せないので写さない
+ *   tokens/dimension.json / typography.json / motion.json → "Semantic" の FLOAT。プリミティブを参照する
+ *                                    ものは別名（VARIABLE_ALIAS）。motion のイージング・transition は写さない
  *   modes/<名>.json（tokens/ の外） → コレクション "Semantic" のモード "<名>"（差分のみ）
  *   変数名はトークンパスから機械導出（color.salmon.500 → color/salmon/500、
  *   セマンティックは background → color/background）。手で命名しないこと。
@@ -61,6 +65,12 @@ const { payload, stats } = buildFigmaPayload({
   semanticJson: await readJson("color.semantic.json"),
   dimensionJson: await readJson("dimension.json"),
   typographyJson: await readJson("typography.json"),
+  scalePrimitivesJson: {
+    ...(await readJson("typography.primitives.json")),
+    ...(await readJson("space.primitives.json")),
+    ...(await readJson("motion.primitives.json")),
+  },
+  motionJson: await readJson("motion.json"),
   modes: await loadModes(),
   defaultModeName: DEFAULT_MODE,
   existing: existing.meta,
@@ -74,4 +84,11 @@ console.log(
     `values=${stats.valuesSet} set` +
     (stats.modeNames.length ? ` (semantic modes: ${stats.modeNames.join(", ")})` : "")
 );
+if (stats.skipped.length) {
+  // イージング・transition は Figma の変数で表せない（figma-payload.mjs の FIGMA_UNSUPPORTED_TYPES）
+  console.log(
+    `Figma に写さなかったトークン ${stats.skipped.length} 件: ` +
+      stats.skipped.map((t) => `${t.path}(${t.type})`).join(", ")
+  );
+}
 if (result.meta) console.log(JSON.stringify(result.meta).slice(0, 300));

@@ -6,12 +6,17 @@
  *                              差し替え PR の検証条件が「画素差分ゼロ」であるため）。
  *                              末尾にページ余白 / 本文幅（--space-page-* / --size-content-*・
  *                              ADR 0027）を足した。既存の行は 1 バイトも変えていない
+ *                              さらに動きの用途トークン（--motion-*・§10-9）と、
+ *                              prefers-reduced-motion: reduce のときに動きの変数を 0ms にする
+ *                              @media ブロックを末尾に足した
  *   dist/css/primitives.css  — プリミティブ層の :root 変数（参照・ドキュメント用。
- *                              アプリコードからの直接使用は禁止）
+ *                              アプリコードからの直接使用は禁止）。色に加えて文字サイズ・太さ・
+ *                              余白・時間・イージングの段（modes.mjs の PRIMITIVE_NAMESPACES）
  *   dist/css/theme.css       — Tailwind v4 の @theme inline ブロック
  *                              （--color-* / --font-* / --text-* / --radius-* と、
  *                              ADR 0027 の --spacing-page-* / --container-content-*、
- *                              §10-8 の --text-role-* / --font-weight-* / --spacing-{inset,related,group}）
+ *                              §10-8 の --text-role-* / --font-weight-* / --spacing-{inset,related,group}、
+ *                              §10-9 の --transition-duration-* / --ease-*）
  *   DESIGN.md の先頭 YAML    — DTCG からの写し（ADR-0032）。本文は手書きが正で触らない。CI では書き込まない
  *   dist/json/tokens.json    — 解決済みフラット JSON（機械用）
  *   dist/css/modes/<名>.css  — セマンティックのモード上書き（ADR 0026 Decision 3）。
@@ -31,6 +36,9 @@ import StyleDictionary from "style-dictionary";
 import {
   LAYOUT_NAMESPACES,
   MODES_DIR,
+  MOTION_NAMESPACE,
+  PRIMITIVE_NAMESPACES,
+  REDUCED_MOTION_EXTENSION,
   TOKENS_SOURCE_GLOB,
   assertModeOverridesSemanticOnly,
   loadModes,
@@ -41,7 +49,10 @@ import { syncFoundationDesignMd } from "./scripts/design-md.mjs";
 
 /** 名前空間の判定。tokens/*.json のトップレベルキーが正 */
 const ns = (token) => token.path[0];
-const isPrimitiveColor = (token) => ns(token) === "color";
+/** プリミティブ層（色・文字サイズ・太さ・余白・時間・イージング）。primitives.css にだけ出す */
+const isPrimitive = (token) => PRIMITIVE_NAMESPACES.includes(ns(token));
+/** 動きの用途トークン（§10-9）。:root に変数で出し、theme から var() で引く */
+const isMotion = (token) => ns(token) === MOTION_NAMESPACE;
 /** ページ余白 / 本文幅（ADR 0027）。:root に変数で出し、theme から var() で引く。 */
 const isLayout = (token) => Object.hasOwn(LAYOUT_NAMESPACES, ns(token));
 /**
@@ -51,15 +62,64 @@ const isLayout = (token) => Object.hasOwn(LAYOUT_NAMESPACES, ns(token));
  *   （= `bg-space-page-block` という色ユーティリティが生える）。
  *   `verify.mjs` の `verify:layout-tokens` が「色として出ていないこと」を見ている。
  */
-const NON_COLOR_NAMESPACES = ["color", "font", "text", "radius", ...Object.keys(LAYOUT_NAMESPACES)];
+const NON_COLOR_NAMESPACES = [
+  ...PRIMITIVE_NAMESPACES,
+  "font",
+  "text",
+  "radius",
+  MOTION_NAMESPACE,
+  ...Object.keys(LAYOUT_NAMESPACES),
+];
 const isSemanticColor = (token) => !NON_COLOR_NAMESPACES.includes(ns(token));
 
-const PASSTHROUGH_TRANSFORMS = ["attribute/cti", "name/kebab"];
+/**
+ * 名前変換に加えて、動きの 2 型だけを CSS の文字列にする（どちらも $type で絞られるので、
+ * 既存の色・寸法のトークンには触れない）:
+ *   cubicBezier/css          [0.2,0,0.38,0.9] → cubic-bezier(0.2, 0, 0.38, 0.9)
+ *   transition/css/shorthand {duration, delay, timingFunction} → "250ms cubic-bezier(…) 0ms"
+ * 順序が意味を持つ（transition の timingFunction を先に cubic-bezier() にしてから 1 行にする）
+ */
+const PASSTHROUGH_TRANSFORMS = [
+  "attribute/cti",
+  "name/kebab",
+  "cubicBezier/css",
+  "transition/css/shorthand",
+];
+
+/**
+ * prefers-reduced-motion: reduce のときの上書き（§10-9）。
+ * `remove` の付いた変数（位置・大きさ・回転を動かすもの）だけを 0ms にする。
+ * 色・不透明度の変化（`keep` = motion.duration.feedback）は 150ms のまま残す。
+ * transition は「時間 イージング 遅延」の先頭（時間）だけを 0ms にする。
+ */
+function reducedMotionBlock(tokens) {
+  const lines = [];
+  for (const token of tokens) {
+    if (!isMotion(token)) continue;
+    if (token.$extensions?.[REDUCED_MOTION_EXTENSION] !== "remove") continue;
+    const value =
+      token.$type === "transition" ? String(token.$value).replace(/^\S+/, "0ms") : "0ms";
+    lines.push(`    --${token.name}: ${value};`);
+  }
+  if (!lines.length) return "";
+  return (
+    `\n/* 動きを減らす設定（§10-9）: 位置・大きさ・回転の動きを消し、色・不透明度の変化だけを残す */\n` +
+    `@media (prefers-reduced-motion: reduce) {\n  :root {\n${lines.join("\n")}\n  }\n}\n`
+  );
+}
 
 const sd = new StyleDictionary({
   source: [TOKENS_SOURCE_GLOB],
   hooks: {
     formats: {
+      /**
+       * 組み込みの css/variables に、prefers-reduced-motion の @media を末尾に足したもの。
+       * 動きのトークンが 0 件なら css/variables と 1 バイトも違わない
+       */
+      "peco/css-variables-with-reduced-motion": async (args) => {
+        const base = await StyleDictionary.hooks.formats["css/variables"](args);
+        return base + reducedMotionBlock(args.dictionary.allTokens);
+      },
       /**
        * Tailwind v4 の @theme inline ブロック。peco の globals.css の既存
        * @theme inline と同じ対応（--color-X: var(--X)）を機械生成し、
@@ -84,6 +144,17 @@ const sd = new StyleDictionary({
             lines.push(`  --text-${token.path.slice(1).join("-")}: ${token.$value};`);
           } else if (ns(token) === "radius") {
             lines.push(`  --radius-${token.path[1]}: ${token.$value};`);
+          } else if (isMotion(token) && token.path[1] === "duration") {
+            // motion.duration.surface → --transition-duration-surface: var(--motion-duration-surface)
+            // （Tailwind v4 の duration-surface）。var() にするのは prefers-reduced-motion の
+            // @media（tokens.css）で 0ms に差し替えるため
+            lines.push(`  --transition-duration-${token.path.slice(2).join("-")}: var(--${token.name});`);
+          } else if (isMotion(token) && token.$type === "cubicBezier") {
+            // motion.productive.enter → --ease-productive-enter（Tailwind v4 の ease-productive-enter）
+            lines.push(`  --ease-${token.path.slice(1).join("-")}: var(--${token.name});`);
+          } else if (isMotion(token)) {
+            // transition は Tailwind に対応する theme の名前空間が無いので出さない。
+            // :root の --motion-transition-* を `transition: transform var(…)` で使う
           } else if (isLayout(token)) {
             // space.page.block → --spacing-page-block: var(--space-page-block)
             // size.content.admin → --container-content-admin: var(--size-content-admin)
@@ -103,9 +174,10 @@ const sd = new StyleDictionary({
       files: [
         {
           destination: "tokens.css",
-          format: "css/variables",
-          // ページ余白 / 本文幅も :root に出す（theme が var() で引き、モードが差し替える）
-          filter: (token) => isSemanticColor(token) || isLayout(token),
+          format: "peco/css-variables-with-reduced-motion",
+          // ページ余白 / 本文幅も :root に出す（theme が var() で引き、モードが差し替える）。
+          // 動きの用途トークンも出す（theme が var() で引き、reduced-motion が差し替える）
+          filter: (token) => isSemanticColor(token) || isLayout(token) || isMotion(token),
           options: { outputReferences: false },
         },
       ],
@@ -117,7 +189,7 @@ const sd = new StyleDictionary({
         {
           destination: "primitives.css",
           format: "css/variables",
-          filter: isPrimitiveColor,
+          filter: isPrimitive,
           options: { outputReferences: false },
         },
       ],

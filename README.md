@@ -18,8 +18,8 @@ Figma Variables の両方へ一方向に配信する。
 ```
 tokens/*.json (DTCG) ← 唯一の正
     │  Style Dictionary
-    ├→ dist/css/tokens.css      (:root セマンティック変数)
-    ├→ dist/css/primitives.css  (:root プリミティブ変数・参照用)
+    ├→ dist/css/tokens.css      (:root セマンティック変数 + prefers-reduced-motion の上書き)
+    ├→ dist/css/primitives.css  (:root プリミティブ変数・参照用。色・文字サイズ・太さ・余白・時間・イージング)
     ├→ dist/css/theme.css       (Tailwind v4 @theme inline)
     │
     └→ CI (figma-sync.yml) ─ Variables REST API → Figma Variables
@@ -83,8 +83,8 @@ Vercel の設定（2026-10-06 時点）:
 
 | 層 | モード |
 |---|---|
-| `color.primitives.json` | **持たない**（`verify.mjs` が機械的に拒否する） |
-| `color.semantic.json` | **持つ** —— `modes/<名>.json` に差分を書く |
+| `color.primitives.json` / `typography.primitives.json` / `space.primitives.json` / `motion.primitives.json` | **持たない**（`verify.mjs` が機械的に拒否する） |
+| `color.semantic.json`（と `dimension.json` の `space.*` / `size.*`） | **持つ** —— `modes/<名>.json` に差分を書く |
 
 **実在するモードは現在 0 件**（プロダクトが PeCo 1 つなので既定で足りる）。
 機構だけ先に入れてあるのは、semantic が 19 変数の今が最安だから。
