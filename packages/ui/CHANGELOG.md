@@ -1,5 +1,12 @@
 # @edgescrum/ds-core（旧 @edgescrum/peco-ui）
 
+## 0.9.1
+
+### Patch Changes
+
+- 0c7efd1: 使い方の約束（`*.design.md`）を FormField / Alert / Modal / SheetActions / Button の 5 部品に足す（peco 25_design-system.md §10-6 の 5）。DESIGN.md の索引に追加し、約束の無い部品のラチェット（design-md-baseline.json）から 5 件を消した。部品のコードは変わらない。
+- d7e33d3: 部品の約束（Alert / FormField / Modal / Toggle）の「詳しく」を i マークのポップアップに改める（peco 25_design-system.md §10-10）
+
 ## 0.9.0
 
 ### Minor Changes
