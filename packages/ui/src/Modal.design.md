@@ -1,0 +1,41 @@
+# Modal
+
+画面の上に暗転面とカードを重ねるダイアログ（既定で `role="dialog"`・`aria-modal`）。開くとカードへフォーカスを移し、Escape と背景タップで `onClose` を呼び、Tab をカードの中で折り返し、閉じると呼び出し元へフォーカスを戻す。見出し・ボタン・閉じる × は描かない。
+
+- purpose: 応えるまで先へ進めない確認や短い入力を、今の画面を離れずに画面の上に重ねて出す
+- use_when:
+  - 戻せない・お金や予約に影響する操作の確認（削除・予約のキャンセル・解約・プラン変更・URL の再発行）
+  - 今の画面を離れずに済ませる短い入力（休みの登録・スタッフの追加・請求を送る）
+  - 写真の差し替え・削除など、1 つの対象への操作の選択肢を出す
+- dont_use_when:
+  - 結果を知らせるだけで、押すものが「閉じる」しか無い → Alert（`type="success"`）をページに出す
+  - 読み物・長い説明（手順・規約・解約後の流れ）を読ませる → 1 文に削り、残りは「詳しく」に畳む（Disclosure 部品は作成中・peco 25_design-system.md §10-8）
+  - 入力が多いフォーム・何段もの手順 → 別のページに分ける（peco のシェル FocusShell・peco 25_design-system.md §9-11）
+  - 押した瞬間に反映してよい設定 → Toggle
+  - 決まった選択肢から 1 つ選ぶだけ → SelectDropdown
+  - 失敗の理由を出す → 呼び出し元のページに Alert（`type="error"`）を出し、モーダルは開かない
+- never:
+  - ダイアログを作り直さない（`@edgescrum/ds-core` の Modal を import する）
+  - 手書きの portal・`fixed inset-0` の暗転面・Escape やフォーカストラップの写経を書かない
+  - 確認に `window.confirm` を使わない
+  - 名前の無いモーダルを置かない（`ariaLabel` か `ariaLabelledBy` を渡す）
+  - ダイアログとして使うモーダルに `role="presentation"` を渡さない
+  - 破壊的操作の確認で `onClose` に実行を渡さない（Escape・背景タップは取り消し）
+  - 送信中に閉じられるままにしない（送信中は `onClose` に何もしない関数を渡す）
+  - 入力欄のあるモーダルの操作行を SheetActions の外に置かない
+  - 画面の下端に貼り付く見た目を className で作らない（`position="bottom"` も中央に出る）
+  - 開閉の動きを呼び出し側で書かない。動かすなら部品に `motion.transition.modal-enter` / `modal-exit`（250ms・productive）を入れる
+  - 動きを減らす設定で位置・大きさの動きを残さない（透明度の変化だけ残す）
+  - expressive のイージング・`motion.duration.feedback` を開閉の動きに使わない
+  - 見出しとボタンのラベルを 16 字を超えて書かない
+  - 説明を 1 文・40 字を超えて書かない。PC だけに出す説明でも 2 文・80 字まで
+  - 説明に括弧書きで例外・件数を足さない
+- limits:
+  - heading_chars: 16
+  - button_chars: 16
+  - description: 1文・40字・括弧なし
+  - description_pc_only: 2文・80字
+  - description_in_disclosure: 3文まで
+  - motion: motion.transition.modal-enter / modal-exit（250ms・productive enter / exit）
+- check: evaluator
+- decided_by: peco docs/v2/requirements/25_design-system.md §10-2 / §10-8 / §10-9・peco #685 / #1994（dialog が既定）・peco #2212（Escape・フォーカス）・peco #2038 / #1964（失敗時はモーダルを開かない）・docs/adr/0032-ai-readable-usage-contracts-live-next-to-tokens-and-parts.md
