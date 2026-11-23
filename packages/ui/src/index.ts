@@ -56,6 +56,7 @@ export {
   tabItemClass,
   TAB_ITEM_BASE_CLASS,
 } from "./Tabs";
+export type { TabVariant, TabSize, TabSegmentedOptions } from "./Tabs";
 export { TabFilter } from "./TabFilter";
 export {
   LineIcon,

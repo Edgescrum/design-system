@@ -27,6 +27,7 @@ description: "Edgescrum design system — core layer. Audience-agnostic React co
 - InfoTip — 補足 1 文に入らない説明を、ラベル横の i マークを押したときだけ出す → `@src/InfoTip.design.md`
 - Modal — 応えるまで先へ進めない確認や短い入力を、画面の上に重ねて出す → `@src/Modal.design.md`
 - SheetActions — ソフトキーボードでモーダルが縮んでも、送信と取り消しを押せる位置に残す → `@src/SheetActions.design.md`
+- Tabs — 同じ場所に出す中身や、その見方を、ページを離れずに切り替える → `@src/Tabs.design.md`
 - Toggle — 1 つの設定のオン / オフを、押した瞬間に切り替える → `@src/Toggle.design.md`
 
 約束が未記入の部品は `@design-md-baseline.json` に記録してある（減ることしか許さない）。
