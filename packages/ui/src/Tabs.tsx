@@ -45,26 +45,110 @@
  * 暗黙の submit にならないようにするため (#901 で移行候補に挙げた
  * `class-service-form.tsx` の「開催形式」は実際に `<form>` の内側にある)。
  *
+ * ## 見た目の種類: `variant`（#60・2026-11-23 運用者裁定）
+ *
+ * | variant | 見た目 | 何を切り替えるか |
+ * |---|---|---|
+ * | `"underline"`（既定） | 1 行 + 選択中の下線 | **中身そのもの**（店舗設定の基本情報 / 外観 …・分析・口コミ） |
+ * | `"segmented"` | 角丸の枠 + 選択中の塗り | 同じ中身の**見方・立場**を 2〜3 択で（/try の「お客さま / 事業主」） |
+ *
+ * 新部品（SegmentedControl）にしなかったのは、役割と ARIA（`tablist` / `tab`、
+ * リンクなら `aria-current="page"`）が同じで、違うのは見た目だけだから。
+ * 別部品にすると #893 で 1 つにまとめた ARIA の書き方が 2 通りに戻る。
+ *
+ * #893 で `TabFilter` のピル型を外した経緯は変わらない: **中身を切り替えるタブは下線型**。
+ * 使い分けの約束は `Tabs.design.md`。
+ *
+ * - `TabList` の `variant` / `size` / `fullWidth` は Context で `TabButton` に届く
+ *   （ボタン 1 つずつに渡させない）
+ * - `TabBar`（リンク版）の子はアプリ側の `TabLink` なので Context は読まれない。
+ *   アプリは `tabItemClass(isActive, "segmented", { size, fullWidth })` を自分で呼ぶ
+ * - `size` / `fullWidth` は `"segmented"` のときだけ効く。`"underline"` では無視する
+ *
  * ## ベースライン
  *
  * peco 側の `existing-plan-nav-dom.baseline.json` が店舗設定タブ / プレビュー画面の
  * innerHTML を **バイト単位** で固定している (#853 / #861)。
  * ここの DOM を変えるときは、**どのキーがなぜ変わるのかを PR 本文に書いたうえで**
  * ベースラインを更新すること (無言の更新はこの回帰テストを無力化する)。
+ * `variant` を足したあとも、**既定（`"underline"`）の DOM は 1 バイトも変えていない**
+ * （`verify.mjs` の `verify:tabs` が追加前の文字列で固定している）。
  */
 
-import type { ReactNode } from "react";
+import { createContext, useContext, type ReactNode } from "react";
+
+/** タブの見た目。既定は `"underline"`（従来どおり）。使い分けは `Tabs.design.md`。 */
+export type TabVariant = "underline" | "segmented";
+
+/** `"segmented"` の大きさ。`sm` = 1 行に他の操作と並べる小さな切り替え / `md` = 高さ 40px・幅 120px 以上。 */
+export type TabSize = "sm" | "md";
+
+/** `"segmented"` だけが読む寸法の指定。`"underline"` では無視する。 */
+export interface TabSegmentedOptions {
+  /** 既定 `"md"`（Figma の ModeSwitch と同じ 40px） */
+  size?: TabSize;
+  /** 横幅いっぱいにして項目を等分する（スマホで画面幅に揃えるとき）。既定 false */
+  fullWidth?: boolean;
+}
 
 /** タブ 1 つ分の共通クラス (状態に依らない部分)。 */
 export const TAB_ITEM_BASE_CLASS =
   "relative flex flex-1 items-center justify-center whitespace-nowrap py-2.5 text-center text-xs font-medium transition-colors sm:text-sm";
 
-/** タブ 1 つ分のクラス (アクティブ状態込み)。 */
-export function tabItemClass(isActive: boolean): string {
+/**
+ * セグメント型のタブ 1 つ分の共通クラス (状態・大きさに依らない部分)。
+ * 色・文字・角丸・動きはすべてトークン（任意値を書かない）。
+ */
+const SEGMENTED_ITEM_BASE_CLASS =
+  "flex items-center justify-center whitespace-nowrap rounded-full font-emphasis transition-colors duration-feedback ease-productive-standard";
+
+const SEGMENTED_ITEM_SIZE_CLASS: Record<TabSize, string> = {
+  // peco のスケジュールの月 / 週（#901 で手組みのまま残すもの）と同じ大きさの帯
+  sm: "px-4 py-1 text-role-help sm:px-5 sm:text-role-body",
+  // Figma の ModeSwitch（ボタン 120×40）
+  md: "h-10 min-w-30 px-4 text-role-body",
+};
+
+/**
+ * タブ 1 つ分のクラス (アクティブ状態込み)。
+ *
+ * 第 2 引数を省略した（= `"underline"`）ときの戻り値は従来と 1 文字も変わらない。
+ * リンクのタブ（アプリ側の `TabLink`）をセグメント型にするときは
+ * `TabBar variant="segmented"` と同じ `variant` / `size` / `fullWidth` をここにも渡す。
+ */
+export function tabItemClass(
+  isActive: boolean,
+  variant: TabVariant = "underline",
+  options: TabSegmentedOptions = {},
+): string {
+  if (variant === "segmented") {
+    const { size = "md", fullWidth = false } = options;
+    return [
+      SEGMENTED_ITEM_BASE_CLASS,
+      SEGMENTED_ITEM_SIZE_CLASS[size],
+      fullWidth ? "flex-1" : "",
+      isActive ? "bg-accent text-on-accent" : "text-muted hover:text-foreground",
+    ]
+      .filter(Boolean)
+      .join(" ");
+  }
   return `${TAB_ITEM_BASE_CLASS} ${
     isActive ? "text-foreground" : "text-muted hover:text-foreground"
   }`;
 }
+
+/** セグメント型の入れ物（枠）のクラス。`TabList` と `TabBar` で共有する。 */
+function segmentedTrackClass(fullWidth: boolean): string {
+  return `${fullWidth ? "flex w-full" : "inline-flex"} gap-0.5 rounded-full bg-card p-1 ring-1 ring-border`;
+}
+
+interface TabStyle extends TabSegmentedOptions {
+  variant: TabVariant;
+}
+
+/** `TabList` → `TabButton` に見た目を届ける。既定は従来の下線型。 */
+const UNDERLINE_STYLE: TabStyle = { variant: "underline" };
+const TabStyleContext = createContext<TabStyle>(UNDERLINE_STYLE);
 
 /**
  * アクティブタブの下線。アプリ側で独自のタブ項目 (リンク等) を組むときに
@@ -82,7 +166,24 @@ export function TabUnderline() {
  * `role="tablist"` は付けない (子は `role="tab"` ではなくページ遷移するリンク)。
  * 同一ページ内で切り替えるタブが欲しい場合は `TabList` を使うこと。
  */
-export function TabBar({ children }: { children: ReactNode }) {
+export function TabBar({
+  children,
+  variant = "underline",
+  fullWidth = false,
+}: {
+  children: ReactNode;
+  /**
+   * 見た目。既定 `"underline"`（従来どおり・DOM は変わらない）。
+   * `"segmented"` にしたら、子の `TabLink` も `tabItemClass(isActive, "segmented", …)` を使うこと。
+   */
+  variant?: TabVariant;
+  /** `"segmented"` のときだけ効く。横幅いっぱいにする（子にも `fullWidth` を渡す） */
+  fullWidth?: boolean;
+}) {
+  if (variant === "segmented") {
+    // role は付けない（子はページ遷移するリンク。現在地は aria-current="page"）
+    return <div className={segmentedTrackClass(fullWidth)}>{children}</div>;
+  }
   return (
     <div className="border-b border-border">
       {/*
@@ -172,17 +273,39 @@ export function PageTabBar({
 export function TabList({
   children,
   label,
+  variant = "underline",
+  size = "md",
+  fullWidth = false,
 }: {
   children: ReactNode;
   /** タブ群の用途 (`aria-label`)。同じ画面に複数のタブ群がある場合に付ける。 */
   label?: string;
+  /** 見た目。既定 `"underline"`（従来どおり・DOM は変わらない）。子の `TabButton` に Context で届く */
+  variant?: TabVariant;
+  /** `"segmented"` のときだけ効く。既定 `"md"` */
+  size?: TabSize;
+  /** `"segmented"` のときだけ効く。横幅いっぱいにして項目を等分する */
+  fullWidth?: boolean;
 }) {
+  if (variant === "segmented") {
+    return (
+      <TabStyleContext.Provider value={{ variant, size, fullWidth }}>
+        <div className={segmentedTrackClass(fullWidth)} role="tablist" aria-label={label}>
+          {children}
+        </div>
+      </TabStyleContext.Provider>
+    );
+  }
+  // 既定でも Provider で包む（DOM は出ない）。セグメント型の中に下線型を入れ子にしても、
+  // 内側の TabButton が外側の見た目を拾わないようにするため
   return (
-    <div className="border-b border-border">
-      <div className="flex gap-0" role="tablist" aria-label={label}>
-        {children}
+    <TabStyleContext.Provider value={UNDERLINE_STYLE}>
+      <div className="border-b border-border">
+        <div className="flex gap-0" role="tablist" aria-label={label}>
+          {children}
+        </div>
       </div>
-    </div>
+    </TabStyleContext.Provider>
   );
 }
 
@@ -201,6 +324,29 @@ export function TabButton({
   count?: number;
   testId?: string;
 }) {
+  const { variant, size, fullWidth } = useContext(TabStyleContext);
+  if (variant === "segmented") {
+    return (
+      <button
+        type="button"
+        onClick={onClick}
+        role="tab"
+        aria-selected={isActive}
+        aria-current={isActive ? "page" : undefined}
+        className={tabItemClass(isActive, "segmented", { size, fullWidth })}
+        data-testid={testId}
+      >
+        <span>{label}</span>
+        {count !== undefined && (
+          <span
+            className={`ml-1.5 text-role-caption ${isActive ? "text-on-accent" : "text-muted"}`}
+          >
+            {count}
+          </span>
+        )}
+      </button>
+    );
+  }
   return (
     <button
       type="button"

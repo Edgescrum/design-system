@@ -288,6 +288,68 @@ await check("verify:centered-notice — content 未指定なら出力が変わ�
   assert(iDesc >= 0 && iSlot > iDesc && iNote > iSlot && iAct > iNote, `順序が description → content → note → actions でない: ${out}`);
 });
 
+// ── 4a. タブの variant（#60）— 既定（underline）の経路の DOM を動かさない ──────────────
+// peco の existing-plan-nav-dom.baseline.json が店舗設定タブ / プレビュー画面の innerHTML を
+// バイト単位で固定している。期待値は variant を足す前（main a6d9a06）の dist をサーバー描画した文字列そのもの。
+console.log("tabs (#60)");
+
+const TABS_BEFORE = {
+  itemActive: "relative flex flex-1 items-center justify-center whitespace-nowrap py-2.5 text-center text-xs font-medium transition-colors sm:text-sm text-foreground",
+  itemInactive: "relative flex flex-1 items-center justify-center whitespace-nowrap py-2.5 text-center text-xs font-medium transition-colors sm:text-sm text-muted hover:text-foreground",
+  tabBar: "<div class=\"border-b border-border\"><div class=\"flex gap-0 overflow-x-auto\">X</div></div>",
+  tabList: "<div class=\"border-b border-border\"><div class=\"flex gap-0\" role=\"tablist\">X</div></div>",
+  tabListLabel: "<div class=\"border-b border-border\"><div class=\"flex gap-0\" role=\"tablist\" aria-label=\"店舗設定\">X</div></div>",
+  buttonActive: "<button type=\"button\" role=\"tab\" aria-selected=\"true\" aria-current=\"page\" class=\"relative flex flex-1 items-center justify-center whitespace-nowrap py-2.5 text-center text-xs font-medium transition-colors sm:text-sm text-foreground\" data-testid=\"t\"><span>基本</span><span class=\"ml-1.5 text-xs text-muted\">3</span><span class=\"absolute bottom-0 left-0 right-0 h-0.5 rounded-full bg-accent\"></span></button>",
+  buttonInactive: "<button type=\"button\" role=\"tab\" aria-selected=\"false\" class=\"relative flex flex-1 items-center justify-center whitespace-nowrap py-2.5 text-center text-xs font-medium transition-colors sm:text-sm text-muted hover:text-foreground\"><span>外観</span><span class=\"ml-1.5 text-xs text-muted/60\">0</span></button>",
+  buttonPlain: "<button type=\"button\" role=\"tab\" aria-selected=\"false\" class=\"relative flex flex-1 items-center justify-center whitespace-nowrap py-2.5 text-center text-xs font-medium transition-colors sm:text-sm text-muted hover:text-foreground\"><span>外観</span></button>",
+  filter: "<div class=\"border-b border-border\"><div class=\"flex gap-0\" role=\"tablist\"><button type=\"button\" role=\"tab\" aria-selected=\"true\" aria-current=\"page\" class=\"relative flex flex-1 items-center justify-center whitespace-nowrap py-2.5 text-center text-xs font-medium transition-colors sm:text-sm text-foreground\"><span>すべて</span><span class=\"ml-1.5 text-xs text-muted\">2</span><span class=\"absolute bottom-0 left-0 right-0 h-0.5 rounded-full bg-accent\"></span></button><button type=\"button\" role=\"tab\" aria-selected=\"false\" class=\"relative flex flex-1 items-center justify-center whitespace-nowrap py-2.5 text-center text-xs font-medium transition-colors sm:text-sm text-muted hover:text-foreground\"><span>未払い</span></button></div></div>",
+};
+
+await check("verify:tabs — 既定（underline）の DOM・クラスは variant 追加前と 1 バイトも変わらない", async () => {
+  needDist();
+  const noop = () => {};
+  const T = TABS_BEFORE;
+  // 省略 / 明示の "underline" / underline に segmented 用の props を渡す（無視される）の 3 通りで同じになること
+  for (const [extra, what] of [
+    [{}, "省略"],
+    [{ variant: "underline" }, "variant=underline"],
+    [{ variant: "underline", size: "sm", fullWidth: true }, "underline + size / fullWidth（無視される）"],
+  ]) {
+    eq(ui.tabItemClass(true, extra.variant, extra), T.itemActive, `tabItemClass(true)（${what}）`);
+    eq(ui.tabItemClass(false, extra.variant, extra), T.itemInactive, `tabItemClass(false)（${what}）`);
+    eq(html(h(ui.TabBar, extra, "X")), T.tabBar, `TabBar（${what}）`);
+    eq(html(h(ui.TabList, extra, "X")), T.tabList, `TabList（${what}）`);
+    eq(html(h(ui.TabList, { ...extra, label: "店舗設定" }, "X")), T.tabListLabel, `TabList + label（${what}）`);
+    const inList = (btn) => html(h(ui.TabList, extra, btn));
+    const wrap = (inner) => T.tabList.replace(">X<", `>${inner}<`);
+    eq(inList(h(ui.TabButton, { isActive: true, label: "基本", onClick: noop, count: 3, testId: "t" })), wrap(T.buttonActive), `TabButton（選択中・件数・testId / ${what}）`);
+    eq(inList(h(ui.TabButton, { isActive: false, label: "外観", onClick: noop, count: 0 })), wrap(T.buttonInactive), `TabButton（未選択・件数 0 / ${what}）`);
+    eq(inList(h(ui.TabButton, { isActive: false, label: "外観", onClick: noop })), wrap(T.buttonPlain), `TabButton（件数なし / ${what}）`);
+    const tabs = [{ key: "a", label: "すべて", count: 2 }, { key: "b", label: "未払い" }];
+    eq(html(h(ui.TabFilter, { ...extra, tabs, activeKey: "a", onChange: noop })), T.filter, `TabFilter（${what}）`);
+  }
+  // TabList の外で TabButton を描いても（Context の既定値）従来どおり
+  eq(html(h(ui.TabButton, { isActive: true, label: "基本", onClick: noop, count: 3, testId: "t" })), T.buttonActive, "TabButton（TabList の外）");
+});
+
+await check("verify:tabs — segmented は角丸の枠 + 塗りで、下線を描かず、任意値を書かない", async () => {
+  needDist();
+  const noop = () => {};
+  const out = html(
+    h(ui.TabList, { variant: "segmented", label: "立場" },
+      h(ui.TabButton, { isActive: true, label: "お客さま", onClick: noop }),
+      h(ui.TabButton, { isActive: false, label: "事業主", onClick: noop }))
+  );
+  assert(/^<div class="inline-flex gap-0\.5 rounded-full bg-card p-1 ring-1 ring-border" role="tablist" aria-label="立場">/.test(out), `枠の形が違う: ${out}`);
+  assert(!out.includes("border-b"), `segmented に下線型の枠が残っている: ${out}`);
+  assert(!out.includes("absolute bottom-0"), `segmented に下線が描かれている: ${out}`);
+  assert((out.match(/role="tab"/g) ?? []).length === 2, `role="tab" が 2 つでない: ${out}`);
+  assert(out.includes('aria-selected="true" aria-current="page"') && out.includes("bg-accent text-on-accent"), `選択中の属性・塗りが無い: ${out}`);
+  assert(!/\w-\[|\w\[#/.test(out), `任意値（[...]）を書いている: ${out}`);
+  const link = html(h(ui.TabBar, { variant: "segmented", fullWidth: true }, "X"));
+  eq(link, '<div class="flex w-full gap-0.5 rounded-full bg-card p-1 ring-1 ring-border">X</div>', "TabBar（segmented / fullWidth。role を付けない）");
+});
+
 // ── 4b. 重ねる面と結果の箱（#56）— 既存の呼び出しの DOM を動かさない ──────────────────
 // peco は Modal を 33 箇所（うち position="bottom" 9 箇所）、Alert を 50 ファイルで使う。
 // #56 で Modal を BottomSheet と共有する枠（dialog-frame）に載せ替え、Alert に押せる行を足した。
